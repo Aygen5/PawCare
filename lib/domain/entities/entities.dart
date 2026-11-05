@@ -7,4 +7,5 @@ export 'dog.dart';
 export 'notification.dart';
 export 'sitter.dart';
 export 'user_role.dart';
+export 'user_entity.dart';
 export 'vaccination.dart';

@@ -3,8 +3,11 @@ import '../entities/vaccination.dart';
 
 /// Köpek profili ve sağlık verilerini yöneten soyut Domain sözleşmesi.
 abstract class DogRepositoryInterface {
-  /// Mevcut kayıtlı köpek profilini getirir.
-  Dog? getCurrentDog();
+  /// Mevcut kayıtlı köpek profilini asenkron getirir.
+  Future<Dog?> getCurrentDog();
+
+  /// Kayıtlı tüm köpeklerin listesini asenkron getirir.
+  Future<List<Dog>> getDogs();
 
   /// Köpek profil bilgilerini kaydeder veya günceller.
   Future<void> saveDog(Dog dog);

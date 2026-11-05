@@ -36,4 +36,29 @@ class Vaccination {
       completionDate: completionDate ?? this.completionDate,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'dueDate': dueDate,
+      'status': status.name,
+      'vetName': vetName,
+      'completionDate': completionDate,
+    };
+  }
+
+  factory Vaccination.fromMap(Map<String, dynamic> map) {
+    return Vaccination(
+      id: map['id'] as String? ?? '',
+      title: map['title'] as String? ?? '',
+      dueDate: map['dueDate'] as String? ?? '',
+      status: VaccineStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => VaccineStatus.upcoming,
+      ),
+      vetName: map['vetName'] as String? ?? '',
+      completionDate: map['completionDate'] as String?,
+    );
+  }
 }

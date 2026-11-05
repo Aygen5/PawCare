@@ -71,6 +71,9 @@ class Vaccination extends HiveObject implements entity.Vaccination {
     };
   }
 
+  @override
+  Map<String, dynamic> toMap() => toJson();
+
   factory Vaccination.fromJson(Map<String, dynamic> json) {
     return Vaccination(
       id: json['id'] as String,
@@ -84,10 +87,25 @@ class Vaccination extends HiveObject implements entity.Vaccination {
       completionDate: json['completionDate'] as String?,
     );
   }
+
+  factory Vaccination.fromEntity(entity.Vaccination v) {
+    if (v is Vaccination) return v;
+    return Vaccination(
+      id: v.id,
+      title: v.title,
+      dueDate: v.dueDate,
+      status: v.status,
+      vetName: v.vetName,
+      completionDate: v.completionDate,
+    );
+  }
 }
 
 @HiveType(typeId: 3)
 class Dog extends HiveObject implements entity.Dog {
+  @override
+  String? get ownerId => null;
+
   @HiveField(0)
   final String id;
 
@@ -145,6 +163,7 @@ class Dog extends HiveObject implements entity.Dog {
 
   Dog copyWith({
     String? id,
+    String? ownerId,
     String? name,
     String? breed,
     int? ageYears,
@@ -193,6 +212,9 @@ class Dog extends HiveObject implements entity.Dog {
     };
   }
 
+  @override
+  Map<String, dynamic> toMap() => toJson();
+
   factory Dog.fromJson(Map<String, dynamic> json) {
     return Dog(
       id: json['id'] as String,
@@ -214,10 +236,34 @@ class Dog extends HiveObject implements entity.Dog {
           [],
     );
   }
+
+  factory Dog.fromEntity(entity.Dog dog) {
+    if (dog is Dog) return dog;
+    return Dog(
+      id: dog.id,
+      name: dog.name,
+      breed: dog.breed,
+      ageYears: dog.ageYears,
+      weightKg: dog.weightKg,
+      gender: dog.gender,
+      microchip: dog.microchip,
+      photoPath: dog.photoPath,
+      allergyNote: dog.allergyNote,
+      behaviorNote: dog.behaviorNote,
+      clinicName: dog.clinicName,
+      clinicPhone: dog.clinicPhone,
+      vaccinations: dog.vaccinations
+          .map((v) => Vaccination.fromEntity(v))
+          .toList(),
+    );
+  }
 }
 
 @HiveType(typeId: 4)
 class SitterListing extends HiveObject implements entity.SitterListing {
+  @override
+  String? get userId => null;
+
   @HiveField(0)
   final String id;
 
@@ -283,6 +329,7 @@ class SitterListing extends HiveObject implements entity.SitterListing {
 
   SitterListing copyWith({
     String? id,
+    String? userId,
     String? name,
     String? facilityTitle,
     String? category,
@@ -337,6 +384,9 @@ class SitterListing extends HiveObject implements entity.SitterListing {
     };
   }
 
+  @override
+  Map<String, dynamic> toMap() => toJson();
+
   factory SitterListing.fromJson(Map<String, dynamic> json) {
     return SitterListing(
       id: json['id'] as String,
@@ -364,10 +414,40 @@ class SitterListing extends HiveObject implements entity.SitterListing {
       isVerified: json['isVerified'] as bool? ?? true,
     );
   }
+
+  factory SitterListing.fromEntity(entity.SitterListing s) {
+    if (s is SitterListing) return s;
+    return SitterListing(
+      id: s.id,
+      name: s.name,
+      facilityTitle: s.facilityTitle,
+      category: s.category,
+      rating: s.rating,
+      reviewsCount: s.reviewsCount,
+      pricePerUnit: s.pricePerUnit,
+      unitLabel: s.unitLabel,
+      location: s.location,
+      distanceKm: s.distanceKm,
+      imagePath: s.imagePath,
+      galleryPaths: s.galleryPaths,
+      bio: s.bio,
+      amenities: s.amenities,
+      isVerified: s.isVerified,
+    );
+  }
 }
 
 @HiveType(typeId: 6)
 class BookingRequest extends HiveObject implements entity.BookingRequest {
+  @override
+  String? get ownerId => null;
+
+  @override
+  String? get dogId => null;
+
+  @override
+  DateTime? get createdAt => null;
+
   @HiveField(0)
   final String id;
 
@@ -421,6 +501,8 @@ class BookingRequest extends HiveObject implements entity.BookingRequest {
 
   BookingRequest copyWith({
     String? id,
+    String? ownerId,
+    String? dogId,
     String? sitterId,
     String? sitterName,
     String? sitterPhoto,
@@ -432,6 +514,7 @@ class BookingRequest extends HiveObject implements entity.BookingRequest {
     double? totalPrice,
     String? careNotes,
     BookingStatus? status,
+    DateTime? createdAt,
   }) {
     return BookingRequest(
       id: id ?? this.id,
@@ -466,6 +549,9 @@ class BookingRequest extends HiveObject implements entity.BookingRequest {
     };
   }
 
+  @override
+  Map<String, dynamic> toMap() => toJson();
+
   factory BookingRequest.fromJson(Map<String, dynamic> json) {
     return BookingRequest(
       id: json['id'] as String,
@@ -483,6 +569,24 @@ class BookingRequest extends HiveObject implements entity.BookingRequest {
         (e) => e.name == json['status'],
         orElse: () => BookingStatus.pending,
       ),
+    );
+  }
+
+  factory BookingRequest.fromEntity(entity.BookingRequest b) {
+    if (b is BookingRequest) return b;
+    return BookingRequest(
+      id: b.id,
+      sitterId: b.sitterId,
+      sitterName: b.sitterName,
+      sitterPhoto: b.sitterPhoto,
+      petName: b.petName,
+      petBreed: b.petBreed,
+      serviceTitle: b.serviceTitle,
+      startDate: b.startDate,
+      endDate: b.endDate,
+      totalPrice: b.totalPrice,
+      careNotes: b.careNotes,
+      status: b.status,
     );
   }
 }

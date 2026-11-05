@@ -7,8 +7,12 @@ class GetDogProfileUseCase {
 
   const GetDogProfileUseCase(this.repository);
 
-  Dog? call() {
+  Future<Dog?> call() async {
     return repository.getCurrentDog();
+  }
+
+  Future<List<Dog>> getAllDogs() async {
+    return repository.getDogs();
   }
 
   Future<void> saveProfile(Dog dog) {

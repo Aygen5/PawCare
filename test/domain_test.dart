@@ -40,12 +40,18 @@ class FakeBookingRepository implements BookingRepositoryInterface {
   final List<BookingRequest> bookings = [];
 
   @override
-  List<BookingRequest> getAllBookings() => List.unmodifiable(bookings);
+  Future<List<BookingRequest>> getAllBookings() async =>
+      List.unmodifiable(bookings);
 
   @override
-  List<BookingRequest> getBookingsByStatus(BookingStatus status) {
+  Future<List<BookingRequest>> getBookingsByStatus(
+    BookingStatus status,
+  ) async {
     return bookings.where((b) => b.status == status).toList();
   }
+
+  @override
+  Stream<List<BookingRequest>> watchBookings() => Stream.value(bookings);
 
   @override
   Future<void> addBooking(BookingRequest booking) async {
@@ -172,12 +178,12 @@ void main() {
         );
 
         await createBooking(booking);
-        expect(getBookings().length, 1);
-        expect(getBookings(filterStatus: BookingStatus.pending).length, 1);
+        expect((await getBookings()).length, 1);
+        expect((await getBookings(filterStatus: BookingStatus.pending)).length, 1);
 
         await manageBooking.updateStatus('b_1', BookingStatus.confirmed);
-        expect(getBookings(filterStatus: BookingStatus.confirmed).length, 1);
-        expect(getBookings(filterStatus: BookingStatus.pending).length, 0);
+        expect((await getBookings(filterStatus: BookingStatus.confirmed)).length, 1);
+        expect((await getBookings(filterStatus: BookingStatus.pending)).length, 0);
       },
     );
 

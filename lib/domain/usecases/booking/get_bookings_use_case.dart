@@ -7,10 +7,14 @@ class GetBookingsUseCase {
 
   const GetBookingsUseCase(this.repository);
 
-  List<BookingRequest> call({BookingStatus? filterStatus}) {
+  Future<List<BookingRequest>> call({BookingStatus? filterStatus}) async {
     if (filterStatus != null) {
       return repository.getBookingsByStatus(filterStatus);
     }
     return repository.getAllBookings();
+  }
+
+  Stream<List<BookingRequest>> watch() {
+    return repository.watchBookings();
   }
 }

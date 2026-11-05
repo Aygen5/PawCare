@@ -7,11 +7,15 @@ class GetNotificationsUseCase {
 
   const GetNotificationsUseCase(this.repository);
 
-  List<NotificationItem> call() {
+  Future<List<NotificationItem>> call() async {
     return repository.getNotifications();
   }
 
-  int getUnreadCount() {
+  Future<int> getUnreadCount() async {
     return repository.getUnreadCount();
+  }
+
+  Stream<List<NotificationItem>> watch() {
+    return repository.watchNotifications();
   }
 }

@@ -83,7 +83,7 @@ void main() {
 
         await repo.saveDog(testDog);
 
-        final retrieved = repo.getCurrentDog();
+        final retrieved = await repo.getCurrentDog();
         expect(retrieved, isNotNull);
         expect(retrieved!.name, 'Barley');
         expect(retrieved.vaccinations.length, 1);
@@ -98,7 +98,7 @@ void main() {
         );
         await repo.addVaccination('dog_1', newVac);
 
-        final updatedDog = repo.getCurrentDog();
+        final updatedDog = await repo.getCurrentDog();
         expect(updatedDog!.vaccinations.length, 2);
 
         // Aşı tamamlama durumu güncellemesi
@@ -108,7 +108,7 @@ void main() {
           VaccineStatus.completed,
           completionDate: '10 Kasım 2026',
         );
-        final finalDog = repo.getCurrentDog();
+        final finalDog = await repo.getCurrentDog();
         final kuduz = finalDog!.vaccinations.firstWhere((v) => v.id == 'v_2');
         expect(kuduz.status, VaccineStatus.completed);
         expect(kuduz.completionDate, '10 Kasım 2026');
@@ -133,10 +133,11 @@ void main() {
       );
 
       await repo.addBooking(newBooking);
-      expect(repo.getAllBookings().any((b) => b.id == 'book_test_1'), isTrue);
+      final allBookings = await repo.getAllBookings();
+      expect(allBookings.any((b) => b.id == 'book_test_1'), isTrue);
 
       await repo.updateBookingStatus('book_test_1', BookingStatus.confirmed);
-      final confirmedList = repo.getBookingsByStatus(BookingStatus.confirmed);
+      final confirmedList = await repo.getBookingsByStatus(BookingStatus.confirmed);
       expect(confirmedList.any((b) => b.id == 'book_test_1'), isTrue);
     });
 
@@ -153,7 +154,8 @@ void main() {
         );
 
         await repo.addNotification(notif);
-        expect(repo.getUnreadCount(), greaterThan(0));
+        final unread = await repo.getUnreadCount();
+        expect(unread, greaterThan(0));
 
         await repo.markAsRead('notif_test');
         final notifObj = HiveBoxes.notifications.get('notif_test');

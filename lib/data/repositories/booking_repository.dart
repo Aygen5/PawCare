@@ -1,13 +1,19 @@
+import 'dart:async';
+
 import 'package:hive/hive.dart';
 
+import '../../domain/entities/booking.dart' as entity;
 import '../../domain/repositories/booking_repository_interface.dart';
 import '../local/hive_boxes.dart';
 import '../models/models.dart';
 
 class BookingRepository implements BookingRepositoryInterface {
-  /// Başlangıç tarihine göre sıralı tüm rezervasyonları getirir.
+  final _bookingStreamController =
+      StreamController<List<BookingRequest>>.broadcast();
+
+  /// Başlangıç tarihine göre sıralı tüm rezervasyonları asenkron getirir.
   @override
-  List<BookingRequest> getAllBookings() {
+  Future<List<BookingRequest>> getAllBookings() async {
     try {
       if (!Hive.isBoxOpen(HiveBoxes.bookingsBox)) return [];
       final list = HiveBoxes.bookings.values.toList();
@@ -18,16 +24,33 @@ class BookingRepository implements BookingRepositoryInterface {
     }
   }
 
-  /// Belirli bir duruma göre filtrelenmiş rezervasyonları getirir.
+  /// Belirli bir duruma göre filtrelenmiş rezervasyonları asenkron getirir.
   @override
-  List<BookingRequest> getBookingsByStatus(BookingStatus status) {
-    return getAllBookings().where((b) => b.status == status).toList();
+  Future<List<BookingRequest>> getBookingsByStatus(BookingStatus status) async {
+    final all = await getAllBookings();
+    return all.where((b) => b.status == status).toList();
+  }
+
+  /// Rezervasyon akışını yayınlar.
+  @override
+  Stream<List<BookingRequest>> watchBookings() {
+    _notifyStream();
+    return _bookingStreamController.stream;
+  }
+
+  Future<void> _notifyStream() async {
+    final list = await getAllBookings();
+    if (!_bookingStreamController.isClosed) {
+      _bookingStreamController.add(list);
+    }
   }
 
   /// Yeni bir rezervasyon talebi ekler.
   @override
-  Future<void> addBooking(covariant BookingRequest booking) async {
-    await HiveBoxes.bookings.put(booking.id, booking);
+  Future<void> addBooking(entity.BookingRequest booking) async {
+    final modelItem = BookingRequest.fromEntity(booking);
+    await HiveBoxes.bookings.put(modelItem.id, modelItem);
+    await _notifyStream();
   }
 
   /// Rezervasyonun durumunu (onaylandı/reddedildi/tamamlandı) günceller.
@@ -40,6 +63,7 @@ class BookingRepository implements BookingRepositoryInterface {
     if (booking != null) {
       final updated = booking.copyWith(status: newStatus);
       await HiveBoxes.bookings.put(bookingId, updated);
+      await _notifyStream();
     }
   }
 
@@ -47,5 +71,6 @@ class BookingRepository implements BookingRepositoryInterface {
   @override
   Future<void> deleteBooking(String bookingId) async {
     await HiveBoxes.bookings.delete(bookingId);
+    await _notifyStream();
   }
 }
