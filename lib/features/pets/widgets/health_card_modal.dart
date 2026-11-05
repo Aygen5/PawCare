@@ -3,13 +3,14 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/app_state.dart';
 import '../../../core/utils/image_storage_service.dart';
-import '../../../data/models/models.dart';
-import '../../../data/repositories/dog_repository.dart';
+import '../../../domain/entities/dog.dart';
+import '../../../domain/entities/vaccination.dart';
+import '../cubit/pets_cubit.dart';
 
 /// Evcil hayvan sağlık ve aşı takvim kartı modalı.
 class HealthCardModal extends StatelessWidget {
@@ -24,8 +25,8 @@ class HealthCardModal extends StatelessWidget {
   }
 
   Widget _buildAvatar(String path) {
-    if (ImageStorageService.isAssetPath(path)) {
-      return Image.asset(
+    if (ImageStorageService.isNetworkUrl(path) || kIsWeb) {
+      return Image.network(
         path,
         fit: BoxFit.cover,
         width: 44,
@@ -38,8 +39,8 @@ class HealthCardModal extends StatelessWidget {
         ),
       );
     }
-    if (kIsWeb) {
-      return Image.network(
+    if (ImageStorageService.isAssetPath(path)) {
+      return Image.asset(
         path,
         fit: BoxFit.cover,
         width: 44,
@@ -132,18 +133,8 @@ class HealthCardModal extends StatelessWidget {
                   vetName: vetController.text.trim(),
                 );
 
-                final repo = DogRepository();
-                await repo.addVaccination(dog.id, newVac);
-
-                final updatedDog = dog.copyWith(
-                  vaccinations: List<Vaccination>.from(dog.vaccinations)
-                    ..add(newVac),
-                );
                 if (context.mounted) {
-                  AppStateScope.of(
-                    context,
-                    listen: false,
-                  ).updateDog(updatedDog);
+                  context.read<PetsCubit?>()?.addVaccination(newVac);
                 }
               }
               if (ctx.mounted) {
@@ -160,8 +151,7 @@ class HealthCardModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final state = AppStateScope.of(context);
-    final dog = state.currentDog;
+    final dog = context.watch<PetsCubit?>()?.state.dog ?? PetsCubit.fallbackDog;
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),

@@ -6,10 +6,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/app_state.dart';
 import '../../../core/utils/image_storage_service.dart';
 import '../../../core/widgets/paw_header_actions.dart';
-import '../../../data/models/models.dart';
+import '../../../domain/entities/dog.dart';
+import '../../../domain/entities/vaccination.dart';
 import '../../discovery/widgets/call_modal.dart';
 import '../cubit/pets_cubit.dart';
 import '../cubit/pets_state.dart';
@@ -37,8 +37,8 @@ class _DogProfileView extends StatelessWidget {
   const _DogProfileView();
 
   Widget _buildPetImage(String path, {double size = 140}) {
-    if (ImageStorageService.isAssetPath(path)) {
-      return Image.asset(
+    if (ImageStorageService.isNetworkUrl(path) || kIsWeb) {
+      return Image.network(
         path,
         fit: BoxFit.cover,
         width: size,
@@ -51,8 +51,8 @@ class _DogProfileView extends StatelessWidget {
         ),
       );
     }
-    if (kIsWeb) {
-      return Image.network(
+    if (ImageStorageService.isAssetPath(path)) {
+      return Image.asset(
         path,
         fit: BoxFit.cover,
         width: size,
@@ -81,11 +81,9 @@ class _DogProfileView extends StatelessWidget {
 
   Future<void> _handlePhotoPick(BuildContext context) async {
     final cubit = context.read<PetsCubit>();
-    final appState = AppStateScope.of(context, listen: false);
 
     final savedPath = await cubit.pickAndSavePetPhoto();
     if (savedPath != null) {
-      appState.updateDogPhoto(savedPath);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -102,12 +100,10 @@ class _DogProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = AppStateScope.of(context);
-
     return BlocBuilder<PetsCubit, PetsState>(
       builder: (context, state) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final dog = state.dog ?? appState.currentDog;
+        final dog = state.dog ?? PetsCubit.fallbackDog;
 
         return Scaffold(
           backgroundColor: isDark
@@ -182,11 +178,11 @@ class _DogProfileView extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // 2 veya daha fazla köpek varsa Köpek Seçici (Pati Değiştirici)
-                  if (appState.dogs.length > 1) ...[
+                  if (state.dogs.length > 1) ...[
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: appState.dogs.map((d) {
+                        children: state.dogs.map((d) {
                           final isSelected = d.id == dog.id;
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
@@ -215,8 +211,7 @@ class _DogProfileView extends StatelessWidget {
                                     : FontWeight.w500,
                               ),
                               onSelected: (_) {
-                                appState.selectDog(d);
-                                context.read<PetsCubit>().updateDogProfile(d);
+                                context.read<PetsCubit>().selectDog(d);
                               },
                             ),
                           );
@@ -953,7 +948,6 @@ class _DogProfileView extends StatelessWidget {
                   allergyNote: allergyController.text.trim(),
                 );
                 context.read<PetsCubit>().updateDogProfile(updated);
-                AppStateScope.of(context, listen: false).updateDog(updated);
                 Navigator.of(ctx).pop();
               },
               child: const Text('Kaydet'),
@@ -1214,8 +1208,6 @@ class _DogProfileView extends StatelessWidget {
                   ],
                 );
 
-                final appState = AppStateScope.of(context, listen: false);
-                appState.addDog(newDog);
                 context.read<PetsCubit>().saveNewDog(newDog);
 
                 Navigator.of(ctx).pop();
@@ -1317,7 +1309,6 @@ class _DogProfileView extends StatelessWidget {
                 behaviorNote: behaviorController.text.trim(),
               );
               context.read<PetsCubit>().updateDogProfile(updated);
-              AppStateScope.of(context, listen: false).updateDog(updated);
               Navigator.of(ctx).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
