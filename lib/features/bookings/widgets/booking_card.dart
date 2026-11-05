@@ -206,8 +206,11 @@ class BookingCard extends StatelessWidget {
                         onPressed: () => LiveTrackingModal.show(
                           context,
                           isHotel: isHotel,
-                          hotelName: 'Mutlu Patiler Köpek Oteli',
+                          hotelName: isHotel ? booking.sitterName : 'Mutlu Patiler Köpek Oteli',
                           locationName: 'Caddebostan, Kadıköy',
+                          bookingId: booking.id,
+                          sitterName: booking.sitterName,
+                          dogName: booking.petName,
                         ),
                         icon: Icon(
                           isHotel ? Icons.hotel_outlined : Icons.location_on,

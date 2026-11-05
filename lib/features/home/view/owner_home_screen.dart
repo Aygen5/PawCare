@@ -5,10 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/app_state.dart';
 import '../../../core/widgets/paw_header_actions.dart';
 import '../../../data/models/models.dart';
 import '../../auth/cubit/role_cubit.dart';
+import '../../pets/cubit/pets_cubit.dart';
 import '../../pets/widgets/health_card_modal.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
@@ -72,7 +72,6 @@ class _OwnerHomeViewState extends State<_OwnerHomeView>
 
   @override
   Widget build(BuildContext context) {
-    final appState = AppStateScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark
         ? AppColors.darkSurfaceContainer
@@ -81,10 +80,10 @@ class _OwnerHomeViewState extends State<_OwnerHomeView>
     return BlocBuilder<HomeCubit, HomeState>(
       builder: (context, homeState) {
         // Aktif veriler HomeCubit'ten alınır, henüz hazır değilse yedek kullanılır
-        final dog = homeState.dog ?? appState.currentDog;
-        final sitters = homeState.featuredSitters.isNotEmpty
-            ? homeState.featuredSitters
-            : appState.sitters;
+        final dog = homeState.dog ??
+            context.watch<PetsCubit?>()?.state.dog ??
+            PetsCubit.fallbackDog;
+        final sitters = homeState.featuredSitters;
         final activeBooking = homeState.activeBooking;
         final upcomingVaccine = homeState.upcomingVaccine;
 
@@ -133,8 +132,6 @@ class _OwnerHomeViewState extends State<_OwnerHomeView>
                             InkWell(
                               onTap: () {
                                 context.read<RoleCubit?>()?.switchToSitter();
-                                appState.setRole(UserRole.sitter);
-                                appState.setSitterNavIndex(0);
                                 context.go(RoutePaths.sitterDashboard);
                               },
                               borderRadius: BorderRadius.circular(20),
@@ -299,7 +296,6 @@ class _OwnerHomeViewState extends State<_OwnerHomeView>
                                     const SizedBox(width: 8),
                                     InkWell(
                                       onTap: () {
-                                        appState.setOwnerNavIndex(2);
                                         context.go(RoutePaths.pets);
                                       },
                                       borderRadius: BorderRadius.circular(8),
@@ -356,7 +352,6 @@ class _OwnerHomeViewState extends State<_OwnerHomeView>
                         ),
                         TextButton(
                           onPressed: () {
-                            appState.setOwnerNavIndex(1);
                             context.go(RoutePaths.explore);
                           },
                           child: Text(
@@ -677,9 +672,11 @@ class _OwnerHomeViewState extends State<_OwnerHomeView>
                                         onPressed: () => LiveTrackingModal.show(
                                           context,
                                           isHotel: isHotel,
-                                          hotelName:
-                                              'Mutlu Patiler Köpek Oteli',
+                                          hotelName: isHotel ? activeBooking.sitterName : 'Mutlu Patiler Köpek Oteli',
                                           locationName: 'Caddebostan, Kadıköy',
+                                          bookingId: activeBooking.id,
+                                          sitterName: activeBooking.sitterName,
+                                          dogName: activeBooking.petName,
                                         ),
                                         icon: Icon(
                                           isHotel
@@ -798,7 +795,6 @@ class _OwnerHomeViewState extends State<_OwnerHomeView>
                         ),
                         TextButton(
                           onPressed: () {
-                            appState.setOwnerNavIndex(1);
                             context.go(RoutePaths.explore);
                           },
                           child: Text(
@@ -820,7 +816,6 @@ class _OwnerHomeViewState extends State<_OwnerHomeView>
                         final s = sitters[index];
                         return InkWell(
                           onTap: () {
-                            appState.selectSitter(s);
                             widget.onSitterSelected(s);
                           },
                           borderRadius: BorderRadius.circular(20),

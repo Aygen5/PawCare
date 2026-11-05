@@ -5,15 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/app_state.dart';
 import '../../../core/widgets/paw_header_actions.dart';
-import '../../../data/models/models.dart';
-import '../../../data/repositories/booking_repository.dart';
+import '../../../data/repositories/firebase_booking_repository.dart';
 import '../../../domain/usecases/booking/get_bookings_use_case.dart';
 import '../../../domain/usecases/booking/manage_booking_status_use_case.dart';
 import '../../auth/cubit/role_cubit.dart';
 import '../../discovery/widgets/call_modal.dart';
 import '../../home/widgets/chat_modal.dart';
+import '../../../core/widgets/modals/live_tracking_modal.dart';
 import '../cubit/provider_cubit.dart';
 import '../cubit/provider_state.dart';
 import '../widgets/booking_request_card.dart';
@@ -43,12 +42,10 @@ class SitterDashboardScreen extends StatelessWidget {
 
     return BlocProvider(
       create: (context) {
-        final bookingRepo = BookingRepository();
-        final appState = AppStateScope.of(context, listen: false);
+        final bookingRepo = FirebaseBookingRepository();
         return ProviderCubit(
           getBookingsUseCase: GetBookingsUseCase(bookingRepo),
           manageBookingStatusUseCase: ManageBookingStatusUseCase(bookingRepo),
-          initialBookings: appState.bookings,
         );
       },
       child: const _SitterDashboardView(),
@@ -61,7 +58,6 @@ class _SitterDashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = AppStateScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -172,8 +168,6 @@ class _SitterDashboardView extends StatelessWidget {
                         OutlinedButton.icon(
                           onPressed: () {
                             context.read<RoleCubit?>()?.switchToOwner();
-                            appState.setRole(UserRole.owner);
-                            appState.setOwnerNavIndex(0);
                             try {
                               context.go(RoutePaths.home);
                             } catch (_) {}
@@ -336,10 +330,6 @@ class _SitterDashboardView extends StatelessWidget {
                               booking.id,
                             );
                             if (success) {
-                              appState.updateBookingStatus(
-                                booking.id,
-                                BookingStatus.confirmed,
-                              );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -360,10 +350,6 @@ class _SitterDashboardView extends StatelessWidget {
                               booking.id,
                             );
                             if (success) {
-                              appState.updateBookingStatus(
-                                booking.id,
-                                BookingStatus.rejected,
-                              );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -401,6 +387,7 @@ class _SitterDashboardView extends StatelessWidget {
                         final confirmed = confirmedBookings[index];
                         return _buildGuestCard(
                           context,
+                          bookingId: confirmed.id,
                           petName: confirmed.petName,
                           breed: confirmed.petBreed,
                           service: confirmed.serviceTitle,
@@ -412,6 +399,7 @@ class _SitterDashboardView extends StatelessWidget {
                   else
                     _buildGuestCard(
                       context,
+                      bookingId: 'demo_booking_caddebostan',
                       petName: 'Barley',
                       breed: 'Golden Retriever',
                       service: 'Oda: Süit 3 • 2 Gece Konaklama',
@@ -429,8 +417,7 @@ class _SitterDashboardView extends StatelessWidget {
                     title: 'İlanımı ve Fiyatlarımı Düzenle',
                     subtitle: 'Gecelik ücret, fotoğraflar ve olanaklar',
                     onTap: () {
-                      final appState = AppStateScope.of(context);
-                      appState.setSitterNavIndex(1);
+                      context.go(RoutePaths.sitterListing);
                     },
                   ),
                   const SizedBox(height: 10),
@@ -440,8 +427,7 @@ class _SitterDashboardView extends StatelessWidget {
                     title: 'Müsaitlik Takvimini Güncelle',
                     subtitle: 'Dolu günler ve oda kontenjanları',
                     onTap: () {
-                      final appState = AppStateScope.of(context);
-                      appState.setSitterNavIndex(2);
+                      context.go(RoutePaths.sitterCalendar);
                     },
                   ),
                   const SizedBox(height: 10),
@@ -451,8 +437,7 @@ class _SitterDashboardView extends StatelessWidget {
                     title: 'Değerlendirmelerim & Puanlar',
                     subtitle: '4.9 ortalama puan (128 yorum)',
                     onTap: () {
-                      final appState = AppStateScope.of(context);
-                      appState.setSitterNavIndex(3);
+                      context.go(RoutePaths.sitterReviews);
                     },
                   ),
                   const SizedBox(height: 24),
@@ -467,6 +452,7 @@ class _SitterDashboardView extends StatelessWidget {
 
   Widget _buildGuestCard(
     BuildContext context, {
+    required String bookingId,
     required String petName,
     required String breed,
     required String service,
@@ -527,6 +513,27 @@ class _SitterDashboardView extends StatelessWidget {
               ],
             ),
           ),
+          IconButton(
+            icon: Icon(
+              Icons.navigation_outlined,
+              color: isDark ? AppColors.darkPrimary : AppColors.primary,
+            ),
+            tooltip: 'GPS Yürüyüşünü Başlat / Yönet',
+            onPressed: () => LiveTrackingModal.show(
+              context,
+              bookingId: bookingId,
+              sitterName: 'Mert (Gezdirici)',
+              dogName: petName,
+              isSitterMode: true,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: isDark
+                  ? AppColors.darkSurfaceContainerLow
+                  : AppColors.surfaceContainerLow,
+              shape: const CircleBorder(),
+            ),
+          ),
+          const SizedBox(width: 6),
           IconButton(
             icon: Icon(
               Icons.phone_outlined,
