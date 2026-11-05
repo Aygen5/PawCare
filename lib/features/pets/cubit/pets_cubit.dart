@@ -2,8 +2,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/utils/image_storage_service.dart';
-import '../../../data/models/models.dart';
-import '../../../data/repositories/dog_repository.dart';
+import '../../../data/repositories/firebase_dog_repository.dart';
+import '../../../domain/entities/dog.dart';
+import '../../../domain/entities/vaccination.dart';
 import '../../../domain/repositories/dog_repository_interface.dart';
 import '../../../domain/usecases/pet/add_vaccination_use_case.dart';
 import '../../../domain/usecases/pet/get_dog_profile_use_case.dart';
@@ -19,13 +20,13 @@ class PetsCubit extends Cubit<PetsState> {
     GetDogProfileUseCase? getDogProfileUseCase,
     AddVaccinationUseCase? addVaccinationUseCase,
     DogRepositoryInterface? dogRepository,
-  }) : _dogRepository = dogRepository ?? DogRepository(),
+  }) : _dogRepository = dogRepository ?? FirebaseDogRepository(),
        _getDogProfileUseCase =
            getDogProfileUseCase ??
-           GetDogProfileUseCase(dogRepository ?? DogRepository()),
+           GetDogProfileUseCase(dogRepository ?? FirebaseDogRepository()),
        _addVaccinationUseCase =
            addVaccinationUseCase ??
-           AddVaccinationUseCase(dogRepository ?? DogRepository()),
+           AddVaccinationUseCase(dogRepository ?? FirebaseDogRepository()),
        super(const PetsState());
 
   /// Varsayılan yedek köpek profili.
@@ -82,10 +83,18 @@ class PetsCubit extends Cubit<PetsState> {
     emit(state.copyWith(status: PetsStatus.loading));
 
     try {
-      final rawDog = _getDogProfileUseCase.call();
+      final rawDog = await _getDogProfileUseCase.call();
       final loadedDog = rawDog is Dog ? rawDog : fallbackDog;
+      final rawDogs = await _dogRepository.getDogs();
+      final dogsList = rawDogs.isNotEmpty ? rawDogs : [loadedDog];
 
-      emit(state.copyWith(status: PetsStatus.loaded, dog: loadedDog));
+      emit(
+        state.copyWith(
+          status: PetsStatus.loaded,
+          dog: loadedDog,
+          dogs: dogsList,
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(
@@ -94,6 +103,11 @@ class PetsCubit extends Cubit<PetsState> {
         ),
       );
     }
+  }
+
+  /// Aktif olarak görüntülenen köpeği seçer.
+  void selectDog(Dog selected) {
+    emit(state.copyWith(dog: selected));
   }
 
   /// image_picker ile galeriden yeni fotoğraf seçer, kalıcı klasöre kopyalar ve Hive'a kaydeder.
@@ -112,16 +126,19 @@ class PetsCubit extends Cubit<PetsState> {
 
       emit(state.copyWith(isPhotoUpdating: true));
 
-      // Fotoğrafı kalıcı dizine kaydet
-      final permanentPath = await ImageStorageService.persistPetPhoto(
+      // Fotoğrafı yerel diske kaydet ve Firebase Storage'a yükle
+      final current = state.dog ?? fallbackDog;
+      final photoUrl = await ImageStorageService.uploadPetPhoto(
         pickedFile,
+        userId: current.ownerId,
+        petId: current.id,
       );
 
       // Mevcut profili güncelle
-      await updatePhotoPath(permanentPath);
+      await updatePhotoPath(photoUrl);
 
       emit(state.copyWith(isPhotoUpdating: false));
-      return permanentPath;
+      return photoUrl;
     } catch (e) {
       emit(
         state.copyWith(
@@ -147,7 +164,14 @@ class PetsCubit extends Cubit<PetsState> {
   /// Köpek profil bilgilerini günceller ve Hive'a kaydeder.
   Future<void> updateDogProfile(Dog updatedDog) async {
     await _dogRepository.saveDog(updatedDog);
-    emit(state.copyWith(status: PetsStatus.loaded, dog: updatedDog));
+    final dogs = await _dogRepository.getDogs();
+    emit(
+      state.copyWith(
+        status: PetsStatus.loaded,
+        dog: updatedDog,
+        dogs: dogs.isNotEmpty ? dogs : [updatedDog],
+      ),
+    );
   }
 
   /// Yeni aşı kaydı ekler ve Hive'a yansıtır.
@@ -157,7 +181,7 @@ class PetsCubit extends Cubit<PetsState> {
 
     // Güncellenmiş köpeği depodan yeniden yükle
     final updated =
-        _dogRepository.getCurrentDog() as Dog? ??
+        (await _dogRepository.getCurrentDog()) ??
         currentDog.copyWith(
           vaccinations: List<Vaccination>.from(currentDog.vaccinations)
             ..add(vaccination),
@@ -193,6 +217,16 @@ class PetsCubit extends Cubit<PetsState> {
   /// Yeni bir köpek profilini kaydeder ve durumu günceller.
   Future<void> saveNewDog(Dog newDog) async {
     await _dogRepository.saveDog(newDog);
-    emit(state.copyWith(status: PetsStatus.loaded, dog: newDog));
+    final dogs = await _dogRepository.getDogs();
+    emit(
+      state.copyWith(
+        status: PetsStatus.loaded,
+        dog: newDog,
+        dogs: dogs.isNotEmpty ? dogs : [newDog],
+      ),
+    );
   }
+
+  /// Yeni köpek ekler.
+  Future<void> addDog(Dog newDog) => saveNewDog(newDog);
 }

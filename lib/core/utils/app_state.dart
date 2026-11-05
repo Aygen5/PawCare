@@ -3,7 +3,13 @@ import 'package:flutter/material.dart';
 import '../../data/models/models.dart';
 import '../../domain/entities/notification.dart' as entity;
 
-/// PawCare geçici uygulama durum yöneticisi; rol, navigasyon, aktif veriler ve bildirimleri tutar.
+/// PawCare eski monolitik uygulama durum yöneticisi.
+/// [DEPRECATED - Faz 1]: Uygulama kodu genelinde çiftbaşlılık (AppState) tamamen kaldırılmış,
+/// durum yönetimi BLoC/Cubit mimarisine devredilmiştir. Bu dosya yalnızca eski testlerin
+/// geriye dönük uyumluluğu için tutulmaktadır.
+@Deprecated(
+  'Faz 1 refaktörü ile AppState tamamen kaldırılmıştır. Yeni kodlarda Cubit/BLoC kullanınız.',
+)
 class AppState extends ChangeNotifier {
   UserRole _role = UserRole.owner;
   int _ownerNavIndex = 0;

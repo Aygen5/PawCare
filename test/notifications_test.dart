@@ -19,10 +19,16 @@ class FakeNotificationRepository implements NotificationRepositoryInterface {
     : notifications = initial != null ? List.from(initial) : [];
 
   @override
-  List<NotificationItem> getNotifications() => List.unmodifiable(notifications);
+  Future<List<NotificationItem>> getNotifications() async =>
+      List.unmodifiable(notifications);
 
   @override
-  int getUnreadCount() => notifications.where((n) => !n.isRead).length;
+  Future<int> getUnreadCount() async =>
+      notifications.where((n) => !n.isRead).length;
+
+  @override
+  Stream<List<NotificationItem>> watchNotifications() =>
+      Stream.value(notifications);
 
   @override
   Future<void> addNotification(NotificationItem notification) async {

@@ -49,11 +49,14 @@ class FakeBookingRepository implements BookingRepositoryInterface {
   final List<BookingRequest> bookings = [];
 
   @override
-  List<BookingRequest> getAllBookings() => bookings;
+  Future<List<BookingRequest>> getAllBookings() async => bookings;
 
   @override
-  List<BookingRequest> getBookingsByStatus(BookingStatus status) =>
+  Future<List<BookingRequest>> getBookingsByStatus(BookingStatus status) async =>
       bookings.where((b) => b.status == status).toList();
+
+  @override
+  Stream<List<BookingRequest>> watchBookings() => Stream.value(bookings);
 
   @override
   Future<void> addBooking(covariant BookingRequest booking) async {

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router/route_names.dart';
-import '../../domain/entities/user_role.dart';
+import '../../features/notifications/cubit/notifications_cubit.dart';
 import '../../features/notifications/view/notifications_sheet.dart';
-import '../utils/app_state.dart';
 import '../theme/app_colors.dart';
 
 /// Ekranların sağ üst köşesinde profil ve bildirim rozetini sunan standart eylem bileşeni.
@@ -20,7 +20,7 @@ class PawHeaderActions extends StatelessWidget {
     this.showProfile = true,
   });
 
-  void _handleNotificationTap(BuildContext context, AppState state) {
+  void _handleNotificationTap(BuildContext context) {
     if (onNotificationTap != null) {
       onNotificationTap!();
       return;
@@ -28,35 +28,28 @@ class PawHeaderActions extends StatelessWidget {
     NotificationsSheet.show(context);
   }
 
-  void _handleProfileTap(BuildContext context, AppState state) {
+  void _handleProfileTap(BuildContext context) {
     if (onProfileTap != null) {
       onProfileTap!();
       return;
     }
-    if (state.role == UserRole.sitter) {
-      state.setSitterNavIndex(4);
-    } else {
-      state.setOwnerNavIndex(4);
-    }
     try {
       context.go(RoutePaths.profile);
-    } catch (_) {
-      // GoRouter bağlı değilse durum indeksi ile profil sekmesine geçilir.
-    }
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = AppStateScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final unreadCount = state.unreadNotificationCount;
+    final notifState = context.watch<NotificationsCubit?>()?.state;
+    final unreadCount = notifState?.unreadCount ?? 0;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Bildirim ikonu ve okunmamış rozet
         InkWell(
-          onTap: () => _handleNotificationTap(context, state),
+          onTap: () => _handleNotificationTap(context),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             width: 42,
@@ -103,7 +96,7 @@ class PawHeaderActions extends StatelessWidget {
           const SizedBox(width: 10),
           // Profil ikonu
           InkWell(
-            onTap: () => _handleProfileTap(context, state),
+            onTap: () => _handleProfileTap(context),
             borderRadius: BorderRadius.circular(16),
             child: Container(
               width: 42,

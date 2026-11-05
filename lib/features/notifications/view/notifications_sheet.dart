@@ -3,12 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/app_state.dart';
 import '../../../data/repositories/notification_repository.dart';
 import '../../../domain/entities/notification.dart';
 import '../../../domain/entities/user_role.dart';
 import '../../../domain/usecases/notification/get_notifications_use_case.dart';
 import '../../../domain/usecases/notification/mark_notification_read_use_case.dart';
+import '../../auth/cubit/role_cubit.dart';
 import '../cubit/notifications_cubit.dart';
 import '../cubit/notifications_state.dart';
 
@@ -36,12 +36,10 @@ class NotificationsSheet extends StatelessWidget {
         }
 
         final repo = NotificationRepository();
-        final appState = AppStateScope.of(context, listen: false);
         return BlocProvider(
           create: (_) => NotificationsCubit(
             getNotificationsUseCase: GetNotificationsUseCase(repo),
             markNotificationReadUseCase: MarkNotificationReadUseCase(repo),
-            initialNotifications: appState.notifications,
           ),
           child: const NotificationsSheet(),
         );
@@ -51,7 +49,7 @@ class NotificationsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = AppStateScope.of(context);
+    final role = context.watch<RoleCubit?>()?.state ?? UserRole.owner;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -137,7 +135,6 @@ class NotificationsSheet extends StatelessWidget {
                         TextButton(
                           onPressed: () {
                             cubit.markAllAsRead();
-                            appState.markAllNotificationsAsRead();
                           },
                           child: Text(
                             'Tümünü Oku',
@@ -181,7 +178,7 @@ class NotificationsSheet extends StatelessWidget {
                       onTap: () => cubit.setFilter(NotificationFilter.unread),
                     ),
                     const SizedBox(width: 8),
-                    if (appState.role == UserRole.owner) ...[
+                    if (role == UserRole.owner) ...[
                       _buildFilterChip(
                         context: context,
                         label: 'Aşılar',
@@ -264,7 +261,6 @@ class NotificationsSheet extends StatelessWidget {
                         onTap: () {
                           if (!notif.isRead) {
                             cubit.markAsRead(notif.id);
-                            appState.markNotificationAsRead(notif.id);
                           }
                         },
                       );
@@ -317,7 +313,7 @@ class NotificationsSheet extends StatelessWidget {
                         color: isDark ? AppColors.darkPrimary : AppColors.primary,
                       ),
                       onSelected: (val) {
-                        _triggerDemoEvent(val, cubit, appState);
+                        _triggerDemoEvent(val, cubit, role);
                       },
                       itemBuilder: (ctx) => [
                         const PopupMenuItem(
@@ -351,13 +347,13 @@ class NotificationsSheet extends StatelessWidget {
   void _triggerDemoEvent(
     int typeIndex,
     NotificationsCubit cubit,
-    AppState appState,
+    UserRole role,
   ) {
     String title;
     String body;
     String type;
 
-    if (appState.role == UserRole.sitter) {
+    if (role == UserRole.sitter) {
       switch (typeIndex) {
         case 1:
           title = 'Yeni Rezervasyon Talebi Alındı 📋';
@@ -408,16 +404,6 @@ class NotificationsSheet extends StatelessWidget {
     }
 
     cubit.triggerLocalEventNotification(title: title, body: body, type: type);
-    appState.addNotification(
-      NotificationItem(
-        id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
-        title: title,
-        body: body,
-        timestamp: DateTime.now(),
-        isRead: false,
-        type: type,
-      ),
-    );
   }
 
   Widget _buildFilterChip({

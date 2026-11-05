@@ -1,4 +1,4 @@
-import '../../../data/models/models.dart';
+import '../../../domain/entities/dog.dart';
 
 /// Evcil hayvan profil ekranının yüklenme durumlarını temsil eder.
 enum PetsStatus { initial, loading, loaded, error }
@@ -7,12 +7,14 @@ enum PetsStatus { initial, loading, loaded, error }
 class PetsState {
   final PetsStatus status;
   final Dog? dog;
+  final List<Dog> dogs;
   final String? errorMessage;
   final bool isPhotoUpdating;
 
   const PetsState({
     this.status = PetsStatus.initial,
     this.dog,
+    this.dogs = const [],
     this.errorMessage,
     this.isPhotoUpdating = false,
   });
@@ -24,12 +26,14 @@ class PetsState {
   PetsState copyWith({
     PetsStatus? status,
     Dog? dog,
+    List<Dog>? dogs,
     String? errorMessage,
     bool? isPhotoUpdating,
   }) {
     return PetsState(
       status: status ?? this.status,
       dog: dog ?? this.dog,
+      dogs: dogs ?? this.dogs,
       errorMessage: errorMessage ?? this.errorMessage,
       isPhotoUpdating: isPhotoUpdating ?? this.isPhotoUpdating,
     );

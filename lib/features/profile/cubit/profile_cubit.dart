@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../data/repositories/dog_repository.dart';
+import '../../../data/repositories/firebase_dog_repository.dart';
 import '../../../data/repositories/settings_repository.dart';
 import '../../../domain/entities/user_role.dart';
 import '../../../domain/repositories/dog_repository_interface.dart';
@@ -25,7 +25,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     SettingsRepositoryInterface? settingsRepository,
   }) : _getDogProfileUseCase =
            getDogProfileUseCase ??
-           GetDogProfileUseCase(dogRepository ?? DogRepository()),
+           GetDogProfileUseCase(dogRepository ?? FirebaseDogRepository()),
        _getAppSettingsUseCase =
            getAppSettingsUseCase ??
            GetAppSettingsUseCase(
@@ -48,7 +48,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(state.copyWith(status: ProfileStatus.loading));
     try {
       // Köpek profilini domain katmanından al
-      final dog = _getDogProfileUseCase.call();
+      final dog = await _getDogProfileUseCase.call();
 
       // Kayıtlı rolü getir
       final savedRoleStr = _getAppSettingsUseCase.getUserRole();

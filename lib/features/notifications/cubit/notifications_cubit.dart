@@ -38,11 +38,11 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     }
   }
 
-  /// Veritabanındaki tüm bildirimleri getirir ve filtre durumuna göre listeyi yayar.
-  void loadNotifications({List<NotificationItem>? fallbackNotifications}) {
+  /// Veritabanındaki tüm bildirimleri asenkron getirir ve filtre durumuna göre listeyi yayar.
+  Future<void> loadNotifications({List<NotificationItem>? fallbackNotifications}) async {
     try {
       emit(state.copyWith(status: NotificationsStatus.loading));
-      var list = _getNotificationsUseCase.call();
+      var list = await _getNotificationsUseCase.call();
       if (list.isEmpty &&
           fallbackNotifications != null &&
           fallbackNotifications.isNotEmpty) {
@@ -109,7 +109,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     try {
       emit(state.copyWith(markingId: id));
       await _markNotificationReadUseCase.markSingleAsRead(id);
-      loadNotifications();
+      await loadNotifications();
     } catch (_) {
       final updated = state.allNotifications.map((n) {
         if (n.id == id) return n.copyWith(isRead: true);
@@ -123,7 +123,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   Future<void> markAllAsRead() async {
     try {
       await _markNotificationReadUseCase.markAllAsRead();
-      loadNotifications();
+      await loadNotifications();
     } catch (_) {
       final updated = state.allNotifications
           .map((n) => n.copyWith(isRead: true))
@@ -149,7 +149,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
     try {
       await _notificationRepository.addNotification(newNotif);
-      loadNotifications();
+      await loadNotifications();
     } catch (_) {
       final updated = [newNotif, ...state.allNotifications];
       _applyNotifications(updated, state.activeFilter);
@@ -160,7 +160,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   Future<void> clearAll() async {
     try {
       await _markNotificationReadUseCase.clearAll();
-      loadNotifications();
+      await loadNotifications();
     } catch (_) {
       _applyNotifications([], state.activeFilter);
     }

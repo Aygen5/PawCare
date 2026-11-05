@@ -1,9 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../data/models/models.dart';
-import '../../../data/repositories/booking_repository.dart';
-import '../../../data/repositories/dog_repository.dart';
-import '../../../data/repositories/sitter_repository.dart';
+import '../../../data/repositories/firebase_booking_repository.dart';
+import '../../../data/repositories/firebase_dog_repository.dart';
+import '../../../data/repositories/firebase_sitter_repository.dart';
 import '../../../domain/repositories/booking_repository_interface.dart';
 import '../../../domain/repositories/dog_repository_interface.dart';
 import '../../../domain/repositories/sitter_repository_interface.dart';
@@ -27,13 +27,13 @@ class HomeCubit extends Cubit<HomeState> {
     SitterRepositoryInterface? sitterRepository,
   }) : _getDogProfileUseCase =
            getDogProfileUseCase ??
-           GetDogProfileUseCase(dogRepository ?? DogRepository()),
+           GetDogProfileUseCase(dogRepository ?? FirebaseDogRepository()),
        _getBookingsUseCase =
            getBookingsUseCase ??
-           GetBookingsUseCase(bookingRepository ?? BookingRepository()),
+           GetBookingsUseCase(bookingRepository ?? FirebaseBookingRepository()),
        _getSittersUseCase =
            getSittersUseCase ??
-           GetSittersUseCase(sitterRepository ?? SitterRepository()),
+           GetSittersUseCase(sitterRepository ?? FirebaseSitterRepository()),
        super(const HomeState());
 
   /// Varsayılan yedek köpek profili (Hive kutusu boşsa arayüzün boş kalmaması için).
@@ -68,11 +68,11 @@ class HomeCubit extends Cubit<HomeState> {
 
     try {
       // 1. Köpek profilini UseCase üzerinden getir
-      final rawDog = _getDogProfileUseCase.call();
+      final rawDog = await _getDogProfileUseCase.call();
       final loadedDog = rawDog is Dog ? rawDog : fallbackDog;
 
       // 2. Rezervasyonları UseCase üzerinden getir
-      final rawBookings = _getBookingsUseCase.call();
+      final rawBookings = await _getBookingsUseCase.call();
       final allBookings = rawBookings.whereType<BookingRequest>().toList();
 
       // Günün rezervasyonunu belirle (önce onaylı olan, yoksa ilk rezervasyon)

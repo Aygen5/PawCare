@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router/route_names.dart';
-import '../../data/models/models.dart';
-import '../utils/app_state.dart';
+import '../../domain/entities/user_role.dart';
+import '../../features/auth/cubit/role_cubit.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
@@ -11,35 +12,30 @@ import '../theme/app_typography.dart';
 class PawBottomNav extends StatelessWidget {
   const PawBottomNav({super.key});
 
-  int _calculateCurrentIndex(
-    BuildContext context,
-    AppState state,
-    bool isOwner,
-  ) {
-    if (!isOwner) {
-      return state.sitterNavIndex;
-    }
+  int _calculateCurrentIndex(BuildContext context, bool isOwner) {
     try {
       final location = GoRouterState.of(context).uri.path;
-      if (location.startsWith(RoutePaths.explore)) return 1;
-      if (location.startsWith(RoutePaths.pets)) return 2;
-      if (location.startsWith(RoutePaths.bookings)) return 3;
-      if (location.startsWith(RoutePaths.profile)) return 4;
-      if (location.startsWith(RoutePaths.home)) return 0;
+      if (isOwner) {
+        if (location.startsWith(RoutePaths.explore)) return 1;
+        if (location.startsWith(RoutePaths.pets)) return 2;
+        if (location.startsWith(RoutePaths.bookings)) return 3;
+        if (location.startsWith(RoutePaths.profile)) return 4;
+        if (location.startsWith(RoutePaths.home)) return 0;
+      } else {
+        if (location.startsWith(RoutePaths.sitterListing)) return 1;
+        if (location.startsWith(RoutePaths.sitterCalendar)) return 2;
+        if (location.startsWith(RoutePaths.sitterReviews)) return 3;
+        if (location.startsWith(RoutePaths.profile)) return 4;
+        if (location.startsWith(RoutePaths.sitterDashboard)) return 0;
+      }
     } catch (_) {
-      // GoRouter henüz bağlı değilse durum indeksi kullanılır.
+      // GoRouter henüz bağlı değilse varsayılan 0
     }
-    return state.ownerNavIndex;
+    return 0;
   }
 
-  void _onItemTapped(
-    BuildContext context,
-    AppState state,
-    bool isOwner,
-    int index,
-  ) {
+  void _onItemTapped(BuildContext context, bool isOwner, int index) {
     if (isOwner) {
-      state.setOwnerNavIndex(index);
       switch (index) {
         case 0:
           context.go(RoutePaths.home);
@@ -58,29 +54,31 @@ class PawBottomNav extends StatelessWidget {
           break;
       }
     } else {
-      state.setSitterNavIndex(index);
-      if (index == 0) {
-        try {
+      switch (index) {
+        case 0:
           context.go(RoutePaths.sitterDashboard);
-        } catch (_) {}
-      } else if (index == 4) {
-        try {
+          break;
+        case 1:
+          context.go(RoutePaths.sitterListing);
+          break;
+        case 2:
+          context.go(RoutePaths.sitterCalendar);
+          break;
+        case 3:
+          context.go(RoutePaths.sitterReviews);
+          break;
+        case 4:
           context.go(RoutePaths.profile);
-        } catch (_) {}
-      } else {
-        // İlanım (1), Takvim (2), Yorumlar (3) sekmeleri
-        try {
-          context.go(RoutePaths.sitterDashboard);
-        } catch (_) {}
+          break;
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = AppStateScope.of(context);
-    final isOwner = state.role == UserRole.owner;
-    final currentIndex = _calculateCurrentIndex(context, state, isOwner);
+    final role = context.watch<RoleCubit>().state;
+    final isOwner = role == UserRole.owner;
+    final currentIndex = _calculateCurrentIndex(context, isOwner);
 
     final ownerItems = const [
       _NavItem(
@@ -100,13 +98,13 @@ class PawBottomNav extends StatelessWidget {
       ),
       _NavItem(
         icon: Icons.calendar_today_outlined,
-        activeIcon: Icons.calendar_month,
+        activeIcon: Icons.calendar_today,
         label: 'Taleplerim',
       ),
       _NavItem(
         icon: Icons.person_outline,
         activeIcon: Icons.person,
-        label: 'Profil',
+        label: 'Profilim',
       ),
     ];
 
@@ -114,7 +112,7 @@ class PawBottomNav extends StatelessWidget {
       _NavItem(
         icon: Icons.dashboard_outlined,
         activeIcon: Icons.dashboard,
-        label: 'Panel',
+        label: 'Talepler',
       ),
       _NavItem(
         icon: Icons.storefront_outlined,
@@ -122,8 +120,8 @@ class PawBottomNav extends StatelessWidget {
         label: 'İlanım',
       ),
       _NavItem(
-        icon: Icons.calendar_month_outlined,
-        activeIcon: Icons.calendar_month,
+        icon: Icons.event_available_outlined,
+        activeIcon: Icons.event_available,
         label: 'Takvim',
       ),
       _NavItem(
@@ -134,36 +132,31 @@ class PawBottomNav extends StatelessWidget {
       _NavItem(
         icon: Icons.person_outline,
         activeIcon: Icons.person,
-        label: 'Profil',
+        label: 'Profilim',
       ),
     ];
 
     final items = isOwner ? ownerItems : sitterItems;
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.darkSurfaceContainerLowest
-            : AppColors.surfaceContainerLowest,
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
         border: Border(
           top: BorderSide(
             color: isDark
-                ? AppColors.darkOutlineVariant.withValues(alpha: 0.6)
-                : AppColors.outlineVariant.withValues(alpha: 0.4),
+                ? AppColors.darkOutlineVariant.withValues(alpha: 0.3)
+                : AppColors.outlineVariant.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
-        boxShadow: isDark
-            ? AppColors.darkCardShadow
-            : const [
-                BoxShadow(
-                  color: Color(0x0A000000),
-                  blurRadius: 16,
-                  offset: Offset(0, -4),
-                ),
-              ],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 16,
+            offset: Offset(0, -4),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
@@ -175,58 +168,60 @@ class PawBottomNav extends StatelessWidget {
               final item = items[index];
               final isSelected = index == currentIndex;
 
-              final activeItemColor = isDark
-                  ? AppColors.darkPrimary
-                  : AppColors.primary;
-              final inactiveItemColor = isDark
+              final selectedColor =
+                  isDark ? AppColors.darkPrimary : AppColors.primary;
+              final unselectedColor = isDark
                   ? AppColors.darkOnSurfaceVariant
                   : AppColors.onSurfaceVariant;
-              final activeContainerColor = isDark
-                  ? AppColors.darkPrimaryContainer
-                  : AppColors.secondaryContainer;
 
               return Expanded(
                 child: InkWell(
-                  onTap: () => _onItemTapped(context, state, isOwner, index),
+                  onTap: () => _onItemTapped(context, isOwner, index),
                   borderRadius: BorderRadius.circular(16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 4,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedScale(
+                          scale: isSelected ? 1.1 : 1.0,
+                          duration: const Duration(milliseconds: 180),
+                          child: Icon(
+                            isSelected ? item.activeIcon : item.icon,
+                            color:
+                                isSelected ? selectedColor : unselectedColor,
+                            size: 24,
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? activeContainerColor
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
+                        const SizedBox(height: 3),
+                        Text(
+                          item.label,
+                          style: isSelected
+                              ? AppTypography.caption.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: selectedColor,
+                                )
+                              : AppTypography.caption.copyWith(
+                                  color: unselectedColor,
+                                ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        child: Icon(
-                          isSelected ? item.activeIcon : item.icon,
-                          color: isSelected
-                              ? activeItemColor
-                              : inactiveItemColor,
-                          size: 22,
+                        const SizedBox(height: 2),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          height: 3,
+                          width: isSelected ? 14 : 0,
+                          decoration: BoxDecoration(
+                            color: selectedColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.label,
-                        style: AppTypography.labelTag.copyWith(
-                          color: isSelected
-                              ? activeItemColor
-                              : inactiveItemColor,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );

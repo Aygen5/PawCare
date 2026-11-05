@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/app_state.dart';
 import '../../../domain/entities/dog.dart';
 import '../../../domain/entities/user_role.dart';
 import '../../auth/cubit/role_cubit.dart';
+import '../../pets/cubit/pets_cubit.dart';
 import '../cubit/profile_cubit.dart';
 
 /// Kullanıcı profil bilgilerini, aktif rolünü ve kayıtlı evcil hayvanını gösteren kart.
@@ -20,12 +20,11 @@ class UserProfileCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final state = AppStateScope.of(context);
     final profileCubit = context.watch<ProfileCubit?>();
     final roleCubit = context.watch<RoleCubit?>();
 
     final activeRole =
-        roleCubit?.state ?? profileCubit?.state.role ?? state.role;
+        roleCubit?.state ?? profileCubit?.state.role ?? UserRole.owner;
     final isOwner = activeRole == UserRole.owner;
     final isSitter = activeRole == UserRole.sitter;
 
@@ -43,7 +42,7 @@ class UserProfileCard extends StatelessWidget {
         ? '+90 533 987 65 43'
         : (profileCubit?.state.userPhone ?? '+90 532 123 45 67');
 
-    final Dog dog = profileCubit?.state.dog ?? state.currentDog;
+    final Dog dog = profileCubit?.state.dog ?? PetsCubit.fallbackDog;
 
     final cardBg = isDark
         ? AppColors.darkSurfaceContainerLow
@@ -204,12 +203,6 @@ class UserProfileCard extends StatelessWidget {
                   final newRole = isOwner ? UserRole.sitter : UserRole.owner;
                   roleCubit?.setRole(newRole);
                   profileCubit?.toggleRole();
-                  state.setRole(newRole);
-                  if (newRole == UserRole.sitter) {
-                    state.setSitterNavIndex(4);
-                  } else {
-                    state.setOwnerNavIndex(4);
-                  }
                 },
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(

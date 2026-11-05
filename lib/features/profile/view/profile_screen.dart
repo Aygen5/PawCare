@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/app_state.dart';
 import '../../../domain/entities/user_role.dart';
 import '../../auth/cubit/auth_cubit.dart';
 import '../../auth/cubit/role_cubit.dart';
@@ -105,9 +104,6 @@ class _ProfileView extends StatelessWidget {
                       if (onDogProfileTap != null) {
                         onDogProfileTap!();
                       } else {
-                        // GoRouter ile köpeklerim sayfasına yönlendir
-                        final appState = AppStateScope.of(context);
-                        appState.setOwnerNavIndex(2);
                         context.go(RoutePaths.pets);
                       }
                     },
@@ -190,19 +186,12 @@ class _ProfileView extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         final roleCubit = context.read<RoleCubit?>();
-                        final appState = AppStateScope.of(context);
                         final nextRole = state.role == UserRole.owner
                             ? UserRole.sitter
                             : UserRole.owner;
 
                         roleCubit?.setRole(nextRole);
                         context.read<ProfileCubit>().toggleRole();
-                        appState.setRole(nextRole);
-                        if (nextRole == UserRole.sitter) {
-                          appState.setSitterNavIndex(4);
-                        } else {
-                          appState.setOwnerNavIndex(4);
-                        }
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

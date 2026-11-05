@@ -22,11 +22,14 @@ class FakeBookingRepository implements BookingRepositoryInterface {
     : bookings = initial != null ? List.from(initial) : [];
 
   @override
-  List<BookingRequest> getAllBookings() => List.unmodifiable(bookings);
+  Future<List<BookingRequest>> getAllBookings() async => List.unmodifiable(bookings);
 
   @override
-  List<BookingRequest> getBookingsByStatus(BookingStatus status) =>
+  Future<List<BookingRequest>> getBookingsByStatus(BookingStatus status) async =>
       bookings.where((b) => b.status == status).toList();
+
+  @override
+  Stream<List<BookingRequest>> watchBookings() => Stream.value(bookings);
 
   @override
   Future<void> addBooking(BookingRequest booking) async {

@@ -19,7 +19,11 @@ class FakeDogRepository implements DogRepositoryInterface {
   FakeDogRepository({this.dogToReturn});
 
   @override
-  Dog? getCurrentDog() => dogToReturn;
+  Future<Dog?> getCurrentDog() async => dogToReturn;
+
+  @override
+  Future<List<Dog>> getDogs() async =>
+      dogToReturn != null ? [dogToReturn!] : [];
 
   @override
   Future<void> saveDog(covariant Dog dog) async {
@@ -48,11 +52,14 @@ class FakeBookingRepository implements BookingRepositoryInterface {
   FakeBookingRepository({this.bookingsToReturn = const []});
 
   @override
-  List<BookingRequest> getAllBookings() => bookingsToReturn;
+  Future<List<BookingRequest>> getAllBookings() async => bookingsToReturn;
 
   @override
-  List<BookingRequest> getBookingsByStatus(BookingStatus status) =>
+  Future<List<BookingRequest>> getBookingsByStatus(BookingStatus status) async =>
       bookingsToReturn.where((b) => b.status == status).toList();
+
+  @override
+  Stream<List<BookingRequest>> watchBookings() => Stream.value(bookingsToReturn);
 
   @override
   Future<void> addBooking(covariant BookingRequest booking) async {

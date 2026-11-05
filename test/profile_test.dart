@@ -38,7 +38,11 @@ class FakeDogRepository implements DogRepositoryInterface {
   );
 
   @override
-  Dog? getCurrentDog() => currentDog;
+  Future<Dog?> getCurrentDog() async => currentDog;
+
+  @override
+  Future<List<Dog>> getDogs() async =>
+      currentDog != null ? [currentDog!] : [];
 
   @override
   Future<void> saveDog(Dog dog) async {

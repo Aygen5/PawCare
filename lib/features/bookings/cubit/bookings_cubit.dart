@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../data/repositories/booking_repository.dart';
+import '../../../data/repositories/firebase_booking_repository.dart';
 import '../../../domain/entities/booking.dart';
 import '../../../domain/repositories/booking_repository_interface.dart';
 import '../../../domain/usecases/booking/get_bookings_use_case.dart';
@@ -19,10 +19,10 @@ class BookingsCubit extends Cubit<BookingsState> {
     List<BookingRequest>? initialBookings,
   }) : _getBookingsUseCase =
            getBookingsUseCase ??
-           GetBookingsUseCase(bookingRepository ?? BookingRepository()),
+           GetBookingsUseCase(bookingRepository ?? FirebaseBookingRepository()),
        _manageBookingStatusUseCase =
            manageBookingStatusUseCase ??
-           ManageBookingStatusUseCase(bookingRepository ?? BookingRepository()),
+           ManageBookingStatusUseCase(bookingRepository ?? FirebaseBookingRepository()),
        super(const BookingsState()) {
     if (initialBookings != null && initialBookings.isNotEmpty) {
       _applyBookings(initialBookings, state.activeFilter);
@@ -31,11 +31,11 @@ class BookingsCubit extends Cubit<BookingsState> {
     }
   }
 
-  /// Rezervasyonları veri katmanından çeker ve aktif filtreye göre listeyi hazırlar.
-  void loadBookings({List<BookingRequest>? fallbackBookings}) {
+  /// Rezervasyonları veri katmanından asenkron çeker ve aktif filtreye göre listeyi hazırlar.
+  Future<void> loadBookings({List<BookingRequest>? fallbackBookings}) async {
     try {
       emit(state.copyWith(status: BookingsStatus.loading));
-      var allBookings = _getBookingsUseCase.call();
+      var allBookings = await _getBookingsUseCase.call();
       if (allBookings.isEmpty &&
           fallbackBookings != null &&
           fallbackBookings.isNotEmpty) {
@@ -109,7 +109,7 @@ class BookingsCubit extends Cubit<BookingsState> {
         bookingId,
         BookingStatus.rejected,
       );
-      loadBookings();
+      await loadBookings();
       return true;
     } catch (e) {
       emit(

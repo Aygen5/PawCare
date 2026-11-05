@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/app_state.dart';
 import '../../../core/widgets/paw_header_actions.dart';
 import '../../../data/models/models.dart';
 import '../cubit/discovery_cubit.dart';
@@ -52,7 +51,6 @@ class _ExploreViewState extends State<_ExploreView> {
   ];
 
   late final TextEditingController _searchController;
-  bool _initializedFromAppState = false;
   double _minRating = 0.0;
   double _maxPrice = 2000.0;
   String _sortBy = 'Önerilen';
@@ -64,22 +62,6 @@ class _ExploreViewState extends State<_ExploreView> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_initializedFromAppState) {
-      _initializedFromAppState = true;
-      final appState = AppStateScope.of(context, listen: false);
-      if (appState.selectedCategory != 'Tümü' ||
-          appState.searchQuery.isNotEmpty) {
-        context.read<DiscoveryCubit>().loadSitters(
-          initialCategory: appState.selectedCategory,
-          initialQuery: appState.searchQuery,
-        );
-      }
-    }
-  }
-
-  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -87,7 +69,6 @@ class _ExploreViewState extends State<_ExploreView> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = AppStateScope.of(context);
 
     return BlocConsumer<DiscoveryCubit, DiscoveryState>(
       listener: (context, state) {
@@ -189,7 +170,6 @@ class _ExploreViewState extends State<_ExploreView> {
                                           _maxPrice = maxPrice;
                                           _sortBy = sortBy;
                                         });
-                                        appState.setSelectedCategory(category);
                                         context
                                             .read<DiscoveryCubit>()
                                             .applyFilters(
@@ -241,7 +221,6 @@ class _ExploreViewState extends State<_ExploreView> {
                           : AppColors.primary,
                       onChanged: (val) {
                         context.read<DiscoveryCubit>().setSearchQuery(val);
-                        appState.setSearchQuery(val);
                       },
                       decoration: InputDecoration(
                         hintText:
@@ -271,7 +250,6 @@ class _ExploreViewState extends State<_ExploreView> {
                                   context.read<DiscoveryCubit>().setSearchQuery(
                                     '',
                                   );
-                                  appState.setSearchQuery('');
                                 },
                               )
                             : null,
@@ -354,7 +332,6 @@ class _ExploreViewState extends State<_ExploreView> {
                               ),
                               onSelected: (_) {
                                 context.read<DiscoveryCubit>().setCategory(cat);
-                                appState.setSelectedCategory(cat);
                               },
                             ),
                           );
@@ -450,8 +427,6 @@ class _ExploreViewState extends State<_ExploreView> {
                                 context.read<DiscoveryCubit>().setSearchQuery(
                                   '',
                                 );
-                                appState.setSelectedCategory('Tümü');
-                                appState.setSearchQuery('');
                               },
                               icon: const Icon(Icons.refresh),
                               label: const Text('Filtreleri Temizle'),
@@ -681,7 +656,6 @@ class _ExploreViewState extends State<_ExploreView> {
                                         height: 48,
                                         child: ElevatedButton(
                                           onPressed: () {
-                                            appState.selectSitter(s);
                                             widget.onSitterSelected(s);
                                           },
                                           style: ElevatedButton.styleFrom(

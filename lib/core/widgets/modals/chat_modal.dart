@@ -1,10 +1,13 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../domain/entities/user_role.dart';
+import '../../../features/auth/cubit/role_cubit.dart';
+import '../../../features/chat/cubit/chat_cubit.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
-import '../../utils/app_state.dart';
 
 /// Bakıcı ve köpek sahibi arasındaki canlı sohbet penceresi modalı.
 class ChatModal extends StatefulWidget {
@@ -22,11 +25,22 @@ class ChatModal extends StatefulWidget {
     String sitterName = 'Mert Demir',
     String avatarPath = 'assets/images/mert.jpg',
   }) {
+    ChatCubit? existingCubit;
+    try {
+      existingCubit = context.read<ChatCubit?>();
+    } catch (_) {}
+
     return showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.45),
-      builder: (ctx) =>
-          ChatModal(sitterName: sitterName, avatarPath: avatarPath),
+      builder: (ctx) {
+        final content =
+            ChatModal(sitterName: sitterName, avatarPath: avatarPath);
+        if (existingCubit != null) {
+          return BlocProvider.value(value: existingCubit, child: content);
+        }
+        return BlocProvider(create: (_) => ChatCubit(), child: content);
+      },
     );
   }
 
@@ -49,8 +63,12 @@ class _ChatModalState extends State<ChatModal> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
-    final state = AppStateScope.of(context);
-    state.sendChatMessage(text, participantName: widget.sitterName);
+    final role = context.read<RoleCubit?>()?.state ?? UserRole.owner;
+    context.read<ChatCubit>().sendMessage(
+      text,
+      participantName: widget.sitterName,
+      currentRole: role,
+    );
     _textController.clear();
 
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -67,8 +85,9 @@ class _ChatModalState extends State<ChatModal> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final state = AppStateScope.of(context);
-    final messages = state.getChatMessagesFor(widget.sitterName);
+    final role = context.watch<RoleCubit?>()?.state ?? UserRole.owner;
+    final chatCubit = context.watch<ChatCubit>();
+    final messages = chatCubit.state.getMessagesFor(widget.sitterName, role);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
@@ -161,7 +180,7 @@ class _ChatModalState extends State<ChatModal> {
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMe = msg.senderRole != null
-                        ? (msg.senderRole == state.role)
+                        ? (msg.senderRole == role)
                         : msg.isMe;
 
                     return Align(

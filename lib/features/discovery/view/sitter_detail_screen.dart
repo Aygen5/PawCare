@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/app_state.dart';
 import '../../../core/widgets/paw_header_actions.dart';
 import '../../../data/models/models.dart';
-import '../../../data/repositories/booking_repository.dart';
+import '../../../data/repositories/firebase_booking_repository.dart';
 import '../../../domain/repositories/booking_repository_interface.dart';
+import '../../pets/cubit/pets_cubit.dart';
 import '../widgets/call_modal.dart';
 
 /// Bakıcı ve Hizmet Detay Ekranı — Tarih seçimi, fiyatlama ve Clean Architecture rezervasyon akışı.
@@ -56,14 +57,15 @@ class _SitterDetailScreenState extends State<SitterDetailScreen> {
   double get _totalPrice => _subtotal + _serviceFee;
 
   Future<void> _sendBookingRequest() async {
-    final state = AppStateScope.of(context);
+    final petDog =
+        context.read<PetsCubit?>()?.state.dog ?? PetsCubit.fallbackDog;
     final booking = BookingRequest(
       id: 'book_${DateTime.now().millisecondsSinceEpoch}',
       sitterId: widget.sitter.id,
       sitterName: widget.sitter.name,
       sitterPhoto: widget.sitter.imagePath,
-      petName: state.currentDog.name,
-      petBreed: state.currentDog.breed,
+      petName: petDog.name,
+      petBreed: petDog.breed,
       serviceTitle:
           '${widget.sitter.category} — $_selectedUnits ${widget.sitter.unitLabel} Rezervasyon',
       startDate: _rangeStart ?? DateTime.now(),
@@ -73,12 +75,9 @@ class _SitterDetailScreenState extends State<SitterDetailScreen> {
       status: BookingStatus.pending,
     );
 
-    // 1. Clean Architecture: Rezervasyonu BookingRepository'ye (Hive) kalıcı kaydet
-    final repo = widget.bookingRepository ?? BookingRepository();
+    // 1. Clean Architecture: Rezervasyonu FirebaseBookingRepository'ye kalıcı kaydet
+    final repo = widget.bookingRepository ?? FirebaseBookingRepository();
     await repo.addBooking(booking);
-
-    // 2. Uygulama durumunu (AppState) güncelle
-    state.addBooking(booking);
 
     if (!mounted) return;
 
@@ -158,8 +157,7 @@ class _SitterDetailScreenState extends State<SitterDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final state = AppStateScope.of(context);
-    final dog = state.currentDog;
+    final dog = context.watch<PetsCubit?>()?.state.dog ?? PetsCubit.fallbackDog;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,

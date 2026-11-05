@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../data/models/models.dart';
-import '../../../data/repositories/booking_repository.dart';
-import '../../../data/repositories/sitter_repository.dart';
+import '../../../data/repositories/firebase_booking_repository.dart';
+import '../../../data/repositories/firebase_sitter_repository.dart';
 import '../../../domain/repositories/booking_repository_interface.dart';
 import '../../../domain/repositories/sitter_repository_interface.dart';
 import '../../../domain/usecases/booking/create_booking_use_case.dart';
@@ -24,13 +24,13 @@ class DiscoveryCubit extends Cubit<DiscoveryState> {
     BookingRepositoryInterface? bookingRepository,
   }) : _searchSittersUseCase =
            searchSittersUseCase ??
-           SearchSittersUseCase(sitterRepository ?? SitterRepository()),
+           SearchSittersUseCase(sitterRepository ?? FirebaseSitterRepository()),
        _getSittersUseCase =
            getSittersUseCase ??
-           GetSittersUseCase(sitterRepository ?? SitterRepository()),
+           GetSittersUseCase(sitterRepository ?? FirebaseSitterRepository()),
        _createBookingUseCase =
            createBookingUseCase ??
-           CreateBookingUseCase(bookingRepository ?? BookingRepository()),
+           CreateBookingUseCase(bookingRepository ?? FirebaseBookingRepository()),
        super(const DiscoveryState());
 
   /// Bakıcıları mevcut kategori ve arama filtresine göre yükler.

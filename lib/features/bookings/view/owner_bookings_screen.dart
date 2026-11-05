@@ -5,10 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/app_state.dart';
 import '../../../core/widgets/paw_header_actions.dart';
-import '../../../data/repositories/booking_repository.dart';
-import '../../../domain/entities/booking.dart';
+import '../../../data/repositories/firebase_booking_repository.dart';
 import '../../../domain/usecases/booking/get_bookings_use_case.dart';
 import '../../../domain/usecases/booking/manage_booking_status_use_case.dart';
 import '../cubit/bookings_cubit.dart';
@@ -30,12 +28,10 @@ class OwnerBookingsScreen extends StatelessWidget {
 
     return BlocProvider(
       create: (context) {
-        final bookingRepo = BookingRepository();
-        final appState = AppStateScope.of(context, listen: false);
+        final bookingRepo = FirebaseBookingRepository();
         return BookingsCubit(
           getBookingsUseCase: GetBookingsUseCase(bookingRepo),
           manageBookingStatusUseCase: ManageBookingStatusUseCase(bookingRepo),
-          initialBookings: appState.bookings,
         );
       },
       child: const _OwnerBookingsView(),
@@ -48,7 +44,6 @@ class _OwnerBookingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = AppStateScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -188,7 +183,6 @@ class _OwnerBookingsView extends StatelessWidget {
                           const SizedBox(height: 18),
                           ElevatedButton.icon(
                             onPressed: () {
-                              appState.setOwnerNavIndex(1);
                               try {
                                 context.go(RoutePaths.explore);
                               } catch (_) {}
@@ -263,10 +257,6 @@ class _OwnerBookingsView extends StatelessWidget {
                             if (confirm == true) {
                               final success = await cubit.cancelBooking(b.id);
                               if (success) {
-                                appState.updateBookingStatus(
-                                  b.id,
-                                  BookingStatus.rejected,
-                                );
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
