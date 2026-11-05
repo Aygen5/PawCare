@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../data/models/models.dart';
-import '../../../core/utils/app_state.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/role_cubit.dart';
 import 'signup_modal.dart';
@@ -58,22 +57,20 @@ class _LoginModalState extends State<LoginModal> {
 
     final authCubit = context.read<AuthCubit?>();
     if (authCubit != null) {
-      await authCubit.login(email: email, password: password);
+      final success = await authCubit.login(email: email, password: password);
+      if (!success) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = authCubit.state.errorMessage ?? 'Giriş yapılamadı.';
+        });
+        return;
+      }
     }
 
     if (!mounted) return;
 
-    final state = AppStateScope.of(context);
-    final targetRole = email.contains('ayse')
-        ? UserRole.sitter
-        : UserRole.owner;
+    final targetRole = authCubit?.state.role ?? UserRole.owner;
     context.read<RoleCubit?>()?.setRole(targetRole);
-    state.setRole(targetRole);
-    if (targetRole == UserRole.owner) {
-      state.setOwnerNavIndex(0);
-    } else {
-      state.setSitterNavIndex(0);
-    }
 
     Navigator.of(context).pop();
     widget.onLoginSuccess?.call();
@@ -81,12 +78,71 @@ class _LoginModalState extends State<LoginModal> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Hoş geldiniz! Demo hesabı ile giriş yapıldı.',
+          'Hoş geldiniz! Giriş başarılı.',
           style: AppTypography.bodyMedium.copyWith(color: Colors.white),
         ),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final resetController = TextEditingController(text: _emailController.text);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Şifre Sıfırlama'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Hesabınıza kayıtlı e-posta adresini giriniz. Şifre sıfırlama bağlantısı gönderilecektir.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: resetController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'E-posta Adresi',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final authCubit = context.read<AuthCubit?>();
+              if (authCubit != null) {
+                final success = await authCubit.sendPasswordResetEmail(
+                  resetController.text.trim(),
+                );
+                if (ctx.mounted) {
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        success
+                            ? 'Şifre sıfırlama e-postası gönderildi.'
+                            : authCubit.state.errorMessage ?? 'Hata oluştu.',
+                      ),
+                      backgroundColor:
+                          success ? AppColors.primary : AppColors.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Gönder'),
+          ),
+        ],
       ),
     );
   }
@@ -329,7 +385,20 @@ class _LoginModalState extends State<LoginModal> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => _showForgotPasswordDialog(context),
+                    child: Text(
+                      'Şifremi Unuttum',
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   height: 52,

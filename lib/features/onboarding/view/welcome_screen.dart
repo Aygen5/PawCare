@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../data/models/models.dart';
-import '../../../core/utils/app_state.dart';
 import '../../auth/cubit/role_cubit.dart';
 import '../../auth/widgets/login_modal.dart';
 import '../../auth/widgets/signup_modal.dart';
@@ -17,8 +16,8 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = AppStateScope.of(context);
-    final activeRole = context.watch<RoleCubit?>()?.state ?? state.role;
+    final activeRole =
+        context.watch<RoleCubit?>()?.state ?? UserRole.owner;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -134,8 +133,6 @@ class WelcomeScreen extends StatelessWidget {
                   InkWell(
                     onTap: () {
                       context.read<RoleCubit?>()?.switchToOwner();
-                      state.setRole(UserRole.owner);
-                      state.setOwnerNavIndex(0);
                       onContinue();
                     },
                     borderRadius: BorderRadius.circular(20),
@@ -203,8 +200,6 @@ class WelcomeScreen extends StatelessWidget {
                   InkWell(
                     onTap: () {
                       context.read<RoleCubit?>()?.switchToSitter();
-                      state.setRole(UserRole.sitter);
-                      state.setSitterNavIndex(0);
                       onContinue();
                     },
                     borderRadius: BorderRadius.circular(20),

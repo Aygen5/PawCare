@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../data/models/models.dart';
-import '../../../core/utils/app_state.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/role_cubit.dart';
 import 'login_modal.dart';
@@ -70,24 +69,24 @@ class _SignUpModalState extends State<SignUpModal> {
 
     final authCubit = context.read<AuthCubit?>();
     if (authCubit != null) {
-      await authCubit.signUp(
+      final success = await authCubit.signUp(
         name: name,
         email: email,
         password: password,
         role: _selectedRole,
       );
+      if (!success) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = authCubit.state.errorMessage ?? 'Kayıt yapılamadı.';
+        });
+        return;
+      }
     }
 
     if (!mounted) return;
 
-    final state = AppStateScope.of(context);
     context.read<RoleCubit?>()?.setRole(_selectedRole);
-    state.setRole(_selectedRole);
-    if (_selectedRole == UserRole.owner) {
-      state.setOwnerNavIndex(0);
-    } else {
-      state.setSitterNavIndex(0);
-    }
 
     Navigator.of(context).pop();
     widget.onSignUpSuccess?.call();

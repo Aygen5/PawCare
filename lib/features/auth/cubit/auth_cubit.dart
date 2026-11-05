@@ -1,6 +1,13 @@
+import 'dart:async';
+
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../data/repositories/firebase_auth_repository.dart';
+import '../../../data/repositories/in_memory_auth_repository.dart';
+import '../../../domain/entities/user_entity.dart';
 import '../../../domain/entities/user_role.dart';
+import '../../../domain/repositories/auth_repository_interface.dart';
 import '../../../domain/repositories/settings_repository_interface.dart';
 
 /// Kimlik doğrulama durumunu temsil eden model.
@@ -9,6 +16,7 @@ class AuthState {
   final String? userEmail;
   final String? userName;
   final UserRole role;
+  final UserEntity? user;
   final String? errorMessage;
   final bool isLoading;
 
@@ -17,6 +25,7 @@ class AuthState {
     this.userEmail,
     this.userName,
     this.role = UserRole.owner,
+    this.user,
     this.errorMessage,
     this.isLoading = false,
   });
@@ -26,6 +35,7 @@ class AuthState {
     String? userEmail,
     String? userName,
     UserRole? role,
+    UserEntity? user,
     String? errorMessage,
     bool? isLoading,
   }) {
@@ -34,6 +44,7 @@ class AuthState {
       userEmail: userEmail ?? this.userEmail,
       userName: userName ?? this.userName,
       role: role ?? this.role,
+      user: user ?? this.user,
       errorMessage: errorMessage,
       isLoading: isLoading ?? this.isLoading,
     );
@@ -42,11 +53,62 @@ class AuthState {
 
 /// Giriş, kayıt ve oturum durumunu yöneten Cubit.
 class AuthCubit extends Cubit<AuthState> {
+  final AuthRepositoryInterface _authRepository;
   final SettingsRepositoryInterface? settingsRepository;
+  StreamSubscription<UserEntity?>? _authSubscription;
 
-  AuthCubit({this.settingsRepository}) : super(const AuthState());
+  AuthCubit({
+    AuthRepositoryInterface? authRepository,
+    this.settingsRepository,
+  }) : _authRepository = authRepository ?? createDefaultRepository(),
+       super(const AuthState()) {
+    _initAuthListener();
+  }
 
-  /// Demo hesabı veya kullanıcı bilgileriyle giriş yapar.
+  /// Ortamda Firebase initialize edilmişse FirebaseAuthRepository, yoksa InMemory fallback döner.
+  static AuthRepositoryInterface createDefaultRepository() {
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        return FirebaseAuthRepository();
+      }
+    } catch (_) {}
+    return InMemoryAuthRepository();
+  }
+
+  void _initAuthListener() {
+    try {
+      final current = _authRepository.currentUser;
+      if (current != null) {
+        emit(
+          state.copyWith(
+            isAuthenticated: true,
+            userEmail: current.email,
+            userName: current.displayName,
+            role: current.role,
+            user: current,
+          ),
+        );
+      }
+
+      _authSubscription = _authRepository.authStateChanges.listen((user) {
+        if (user != null) {
+          emit(
+            state.copyWith(
+              isAuthenticated: true,
+              userEmail: user.email,
+              userName: user.displayName,
+              role: user.role,
+              user: user,
+            ),
+          );
+        } else {
+          emit(const AuthState(isAuthenticated: false));
+        }
+      });
+    } catch (_) {}
+  }
+
+  /// E-posta ve şifre ile giriş yapar.
   Future<bool> login({required String email, required String password}) async {
     emit(state.copyWith(isLoading: true, errorMessage: null));
 
@@ -61,26 +123,53 @@ class AuthCubit extends Cubit<AuthState> {
       return false;
     }
 
-    // Demo kullanıcı rol eşleştirmesi
-    final UserRole role = trimmedEmail.contains('ayse')
-        ? UserRole.sitter
-        : UserRole.owner;
-    final String name = role == UserRole.sitter ? 'Ayşe Yılmaz' : 'Aygen Y.';
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(trimmedEmail)) {
+      emit(
+        state.copyWith(
+          isLoading: false,
+          errorMessage: 'Lütfen geçerli bir e-posta adresi giriniz.',
+        ),
+      );
+      return false;
+    }
 
-    await settingsRepository?.setUserRole(
-      role == UserRole.sitter ? 'sitter' : 'owner',
-    );
+    if (password.length < 6) {
+      emit(
+        state.copyWith(
+          isLoading: false,
+          errorMessage: 'Şifre en az 6 karakter olmalıdır.',
+        ),
+      );
+      return false;
+    }
 
-    emit(
-      AuthState(
-        isAuthenticated: true,
-        userEmail: trimmedEmail,
-        userName: name,
-        role: role,
-        isLoading: false,
-      ),
-    );
-    return true;
+    try {
+      final user = await _authRepository.signInWithEmail(
+        email: trimmedEmail,
+        password: password,
+      );
+
+      await settingsRepository?.setUserRole(
+        user.role == UserRole.sitter ? 'sitter' : 'owner',
+      );
+
+      emit(
+        AuthState(
+          isAuthenticated: true,
+          userEmail: user.email,
+          userName: user.displayName,
+          role: user.role,
+          user: user,
+          isLoading: false,
+        ),
+      );
+      return true;
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      emit(state.copyWith(isLoading: false, errorMessage: msg));
+      return false;
+    }
   }
 
   /// Yeni kullanıcı hesabı kaydeder.
@@ -92,9 +181,10 @@ class AuthCubit extends Cubit<AuthState> {
   }) async {
     emit(state.copyWith(isLoading: true, errorMessage: null));
 
-    if (name.trim().isEmpty ||
-        email.trim().isEmpty ||
-        password.trim().isEmpty) {
+    final trimmedName = name.trim();
+    final trimmedEmail = email.trim();
+
+    if (trimmedName.isEmpty || trimmedEmail.isEmpty || password.trim().isEmpty) {
       emit(
         state.copyWith(
           isLoading: false,
@@ -104,24 +194,86 @@ class AuthCubit extends Cubit<AuthState> {
       return false;
     }
 
-    await settingsRepository?.setUserRole(
-      role == UserRole.sitter ? 'sitter' : 'owner',
-    );
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(trimmedEmail)) {
+      emit(
+        state.copyWith(
+          isLoading: false,
+          errorMessage: 'Lütfen geçerli bir e-posta adresi giriniz.',
+        ),
+      );
+      return false;
+    }
 
-    emit(
-      AuthState(
-        isAuthenticated: true,
-        userEmail: email.trim(),
-        userName: name.trim(),
+    if (password.length < 6) {
+      emit(
+        state.copyWith(
+          isLoading: false,
+          errorMessage: 'Şifre en az 6 karakter olmalıdır.',
+        ),
+      );
+      return false;
+    }
+
+    try {
+      final user = await _authRepository.signUpWithEmail(
+        email: trimmedEmail,
+        password: password,
+        fullName: trimmedName,
         role: role,
-        isLoading: false,
-      ),
-    );
-    return true;
+      );
+
+      await settingsRepository?.setUserRole(
+        role == UserRole.sitter ? 'sitter' : 'owner',
+      );
+
+      emit(
+        AuthState(
+          isAuthenticated: true,
+          userEmail: user.email,
+          userName: user.displayName,
+          role: user.role,
+          user: user,
+          isLoading: false,
+        ),
+      );
+      return true;
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      emit(state.copyWith(isLoading: false, errorMessage: msg));
+      return false;
+    }
+  }
+
+  /// Şifre sıfırlama e-postası gönderir.
+  Future<bool> sendPasswordResetEmail(String email) async {
+    final trimmedEmail = email.trim();
+    if (trimmedEmail.isEmpty) {
+      emit(state.copyWith(errorMessage: 'Lütfen e-posta adresinizi giriniz.'));
+      return false;
+    }
+
+    try {
+      await _authRepository.sendPasswordResetEmail(trimmedEmail);
+      return true;
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      emit(state.copyWith(errorMessage: msg));
+      return false;
+    }
   }
 
   /// Oturumu sonlandırır.
   Future<void> logout() async {
+    try {
+      await _authRepository.signOut();
+    } catch (_) {}
     emit(const AuthState(isAuthenticated: false));
+  }
+
+  @override
+  Future<void> close() {
+    _authSubscription?.cancel();
+    return super.close();
   }
 }
