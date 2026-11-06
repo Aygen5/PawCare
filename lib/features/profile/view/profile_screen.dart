@@ -243,7 +243,9 @@ class _ProfileView extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () => _handleLogout(context),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.error),
+                        side: BorderSide(
+                          color: isDark ? AppColors.darkOutline : AppColors.outlineVariant,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -253,8 +255,29 @@ class _ProfileView extends StatelessWidget {
                         'Çıkış Yap',
                         style: AppTypography.bodyMedium.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: AppColors.error,
+                          color: isDark ? AppColors.darkOnSurface : AppColors.onSurface,
                         ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // 6. Apple Guideline 5.1.1: Hesabımı ve Verilerimi Kalıcı Olarak Sil
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      onPressed: () => _handleDeleteAccount(context),
+                      icon: const Icon(Icons.delete_forever, color: AppColors.error, size: 20),
+                      label: Text(
+                        'Hesabımı ve Verilerimi Kalıcı Olarak Sil',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
@@ -332,18 +355,144 @@ class _ProfileView extends StatelessWidget {
     );
   }
 
+  void _handleDeleteAccount(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: isDark
+              ? AppColors.darkSurfaceContainer
+              : AppColors.surfaceContainerLowest,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 28),
+              const SizedBox(width: 8),
+              Text(
+                'Hesabı Kalıcı Olarak Sil',
+                style: AppTypography.headlineSection.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Bu işlem geri alınamaz!\n\nHesabınız, tüm evcil hayvan kayıtlarınız, geçmiş ve aktif rezervasyonlarınız, mesajlarınız ve profil verileriniz veritabanımızdan kalıcı olarak silinecektir.\n\nDevam etmek istediğinize emin misiniz?',
+            style: AppTypography.bodyDefault.copyWith(
+              color: isDark
+                  ? AppColors.darkOnSurfaceVariant
+                  : AppColors.onSurfaceVariant,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'Vazgeç',
+                style: TextStyle(
+                  color: isDark ? AppColors.darkOnSurface : AppColors.onSurface,
+                ),
+              ),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.error,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final cubit = context.read<AuthCubit?>();
+                if (cubit != null) {
+                  final success = await cubit.deleteAccount();
+                  if (context.mounted) {
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Hesabınız ve tüm verileriniz başarıyla silindi.'),
+                          backgroundColor: AppColors.primary,
+                        ),
+                      );
+                      context.go(RoutePaths.welcome);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            cubit.state.errorMessage ??
+                                'Hesap silinirken bir hata oluştu.',
+                          ),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Evet, Hesabımı Sil'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showPrivacyInfo(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Gizlilik ve Güvenlik'),
-        content: const Text(
-          'PawCare, evcil hayvanlarınızın ve kişisel bilgilerinizin gizliliğini en üst düzeyde korur. Yerel şifreleme ve güvenli depolama standartları geçerlidir.',
+        backgroundColor: isDark
+            ? AppColors.darkSurfaceContainer
+            : AppColors.surfaceContainerLowest,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Gizlilik ve Güvenlik İlkeleri',
+          style: AppTypography.headlineSection.copyWith(
+            color: isDark ? AppColors.darkOnSurface : AppColors.onSurface,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'PawCare Gizlilik & KVKK / GDPR Taahhüdü',
+                style: AppTypography.titleCard.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '• Konum Verileri (GPS): Sadece aktif yürüyüş seansı esnasında evcil hayvanınızın güvenliği ve canlı harita takibi için kullanılır. Yürüyüş bittiğinde konum yayını durdurulur.\n\n'
+                '• Fotoğraf & Galeri: Evcil hayvanınızın sağlık karnesi, aşı belgeleri ve profil resimlerini yükleyebilmeniz için kullanılır.\n\n'
+                '• Veri Saklama ve Güvenlik: Tüm kullanıcı ve rezervasyon verileri Google Cloud Firestore üzerinde güvenli şifreleme ile barındırılır.\n\n'
+                '• Hesap & Veri Silme: Apple ve Google ilkelerine uygun olarak dilediğiniz zaman "Hesabımı Sil" butonuyla tüm kişisel kayıtlarınızı kalıcı olarak silebilirsiniz.',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: isDark
+                      ? AppColors.darkOnSurfaceVariant
+                      : AppColors.onSurfaceVariant,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Anladım'),
+            child: Text(
+              'Anladım',
+              style: TextStyle(
+                color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),

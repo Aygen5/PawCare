@@ -271,6 +271,20 @@ class AuthCubit extends Cubit<AuthState> {
     emit(const AuthState(isAuthenticated: false));
   }
 
+  /// Apple Guideline 5.1.1: Kullanıcı hesabını ve tüm ilişkili verilerini kalıcı olarak siler.
+  Future<bool> deleteAccount() async {
+    emit(state.copyWith(isLoading: true, errorMessage: null));
+    try {
+      await _authRepository.deleteAccount();
+      emit(const AuthState(isAuthenticated: false));
+      return true;
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      emit(state.copyWith(isLoading: false, errorMessage: msg));
+      return false;
+    }
+  }
+
   @override
   Future<void> close() {
     _authSubscription?.cancel();

@@ -66,5 +66,15 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
+	<!-- App Store / Apple İzin ve Güvenlik Açıklamaları -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>PawCare, evcil hayvanınızın güvenliği ve köpek yürüyüşü esnasında canlı harita rotası sunabilmek için konumunuza ihtiyaç duyar.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>PawCare, yürüyüş esnasında uygulama arka plana alındığında dahi rotayı kesintisiz kaydedebilmek için konum iznine ihtiyaç duyar.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PawCare, köpeğinizin profil fotoğraflarını ve aşı/sağlık karnesi belgelerini seçip yükleyebilmeniz için galeri erişimi gerektirir.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>PawCare, köpeğinizin ve aşı kartlarının fotoğrafını doğrudan çekip profilinize ekleyebilmeniz için kamera izni gerektirir.</string>
 </dict>
 </plist>

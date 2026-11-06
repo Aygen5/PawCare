@@ -64,6 +64,12 @@ class InMemoryAuthRepository implements AuthRepositoryInterface {
     _controller.add(null);
   }
 
+  @override
+  Future<void> deleteAccount() async {
+    _current = null;
+    _controller.add(null);
+  }
+
   void dispose() {
     _controller.close();
   }

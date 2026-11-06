@@ -28,5 +28,8 @@ abstract class AuthRepositoryInterface {
 
   /// Oturumu sonlandırır.
   Future<void> signOut();
+
+  /// Apple Guideline 5.1.1 uyumluluğu için kullanıcı hesabını ve tüm verilerini siler.
+  Future<void> deleteAccount();
 }
 

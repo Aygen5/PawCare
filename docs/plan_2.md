@@ -357,45 +357,33 @@ sequenceDiagram
 
 ---
 
-## FAZ 6: Ticari Mantık, Güvenlik, Hata İzleme & Store Yayını
+## FAZ 6: Ticari Mantık, Güvenlik, Hata İzleme & Store Yayını [x]
 
 > **Öncelik:** Yayına Çıkış (P0)  
 > **Süre:** 6. Sprint  
-> **Amaç:** Rezervasyon çakışma kontrolleri, veri güvenliği (Security Rules), hata izleme (Crashlytics) ve Apple / Google mağaza standartlarını tamamlamak.
+> **Amaç:** Rezervasyon çakışma kontrolleri, veri güvenliği (Security Rules), hata izleme (Crashlytics) ve Apple / Google mağaza standartlarını tamamlamak.  
+> **Durum:** TAMAMLANDI [x]
 
-### 6.1. Rezervasyon Motoru ve Takvim Doluluk Kontrolü
-- Şu an herkes dolu günlere de rezervasyon açabiliyor.
-- Bakıcının kabul ettiği tarihler (`confirmed`) takvim üzerinde "Dolu / Kırmızı" olarak işaretlenecek; çakışan yeni taleplerin gönderilmesi UI ve backend kurallarıyla engellenecek.
+### 6.1. Rezervasyon Motoru ve Takvim Doluluk Kontrolü [x]
+- [booking_conflict_service.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/domain/services/booking_conflict_service.dart): `BookingConflictService` motoru ile tarih aralıklarının çakışma kontrolü (`checkRangeOverlap`), gün doluluk kontrolü (`isDayOccupied`, `getOccupiedDaysSet`) ve onaylı rezervasyon çakışma doğrulaması (`hasConflict`) uygulandı. [x]
+- [sitter_detail_screen.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/features/discovery/view/sitter_detail_screen.dart): Bakıcının onaylanmış rezervasyon günleri `TableCalendar` üzerinde kırmızı doluluk işaretçisiyle (indicator) gösteriliyor. Çakışan bir tarih seçildiğinde kullanıcı bilgilendirme diyaloğu ile uyarılıp rezervasyon engelleniyor. [x]
+- [booking_conflict_test.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/test/booking_conflict_test.dart): Rezervasyon çakışma ve takvim doluluk testleri %100 başarıyla tamamlandı. [x]
 
-### 6.2. Firestore Güvenlik Kuralları (Security Rules)
-- Kimliği doğrulanmamış hiç kimse veritabanını okuyamamalı veya yazamamalı.
-- Kural Matrisi:
-  ```javascript
-  rules_version = '2';
-  service cloud.firestore {
-    match /databases/{database}/documents {
-      // Sadece kendi köpek profilini düzenleyebilir
-      match /dogs/{dogId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
-      }
-      // Rezervasyon sadece ilgili sahip ve bakıcı tarafından görülebilir
-      match /bookings/{bookingId} {
-        allow read, write: if request.auth != null && 
-          (request.auth.uid == resource.data.ownerId || request.auth.uid == resource.data.sitterId);
-      }
-    }
-  }
-  ```
+### 6.2. Firestore & Storage Güvenlik Kuralları (Security Rules) [x]
+- [firestore.rules](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/firestore.rules): `users`, `dogs`, `bookings`, `live_walks`, `chats` ve `sitters` koleksiyonları için yetkilendirme ve rol tabanlı kural seti oluşturuldu. Kimliği doğrulanmamış talepler ve yetkisiz veri manipülasyonu engellendi. [x]
+- [storage.rules](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/storage.rules): Firebase Storage medya yüklemeleri için boyut (maks 5MB resim, maks 10MB medya) ve MIME type (`image/*`) kısıtlamaları getirildi. [x]
+- [firebase.json](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/firebase.json): `firestore.rules` ve `storage.rules` Firebase dağıtım manifestine bağlandı. [x]
 
-### 6.3. Hata ve Çökme İzleme (Crashlytics & Sentry)
-- `firebase_crashlytics` entegrasyonu.
-- `FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;` ile canlıda kullanıcıların karşılaştığı çökmelerin anında panoda izlenmesi.
+### 6.3. Hata ve Çökme İzleme (Crash Reporting & Monitoring) [x]
+- [crash_reporting_service.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/core/services/crash_reporting_service.dart): Global hata yakalama servisi kuruldu. `FlutterError.onError` ve `PlatformDispatcher.instance.onError` kancaları ile framework ve asenkron çökmeler yakalanıyor; kullanıcı kimliği (`setUserIdentifier`) ve son 100 işlem kırıntısı (breadcrumbs) kaydediliyor. [x]
+- [main.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/main.dart): Uygulama başlangıcına `CrashReportingService.init()` bağlandı ve başlatma hataları raporlandı. [x]
+- [crash_reporting_test.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/test/crash_reporting_test.dart): Çökme izleme ve hata kaydetme birim testleri doğrulandı. [x]
 
-### 6.4. Mağaza (App Store & Google Play) Gereksinimleri
-- **Apple Hesap Silme Kuralı (Guideline 5.1.1):** Profil ekranına "Hesabımı ve Verilerimi Kalıcı Olarak Sil" butonu ve backend silme akışı eklenmesi (Apple bunu zorunlu tutar).
-- **Gizlilik Politikası (Privacy Policy):** Konum verilerinin nasıl işlendiğine dair `privacy-policy.html` sayfası oluşturulması.
-- **İzin Metinleri:** `Info.plist` (iOS) ve `AndroidManifest.xml` (Android) için Apple/Google standartlarına uygun konum/fotoğraf izin açıklamalarının yazılması.
+### 6.4. Mağaza (App Store & Google Play) Gereksinimleri [x]
+- **Apple Hesap Silme Kuralı (Guideline 5.1.1):** [auth_repository_interface.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/domain/repositories/auth_repository_interface.dart), [firebase_auth_repository.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/data/repositories/firebase_auth_repository.dart) ve [auth_cubit.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/features/auth/cubit/auth_cubit.dart) üzerine `deleteAccount()` eklendi. [profile_screen.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/features/profile/view/profile_screen.dart) ekranında kullanıcıya çift onaylı "Hesabımı ve Verilerimi Kalıcı Olarak Sil" aksiyonu sunuldu. [x]
+- **Gizlilik Politikası (Privacy Policy):** [assets/docs/privacy_policy.html](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/assets/docs/privacy_policy.html) dosyası hazırlandı. Konum verisi (canlı yürüyüş), kamera, fotoğraf, veri güvenliği ve hesap silme hakları detaylandırıldı. [profile_screen.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/features/profile/view/profile_screen.dart) içindeki Gizlilik modalı zenginleştirildi. [x]
+- **İzin Metinleri:** [ios/Runner/Info.plist](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/ios/Runner/Info.plist) dosyasına Apple App Store onay gereksinimi olan `NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`, `NSPhotoLibraryUsageDescription` ve `NSCameraUsageDescription` açıklamaları eklendi. [x]
+- [phase6_compliance_test.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/test/phase6_compliance_test.dart): Hesap silme ve mağaza uyumluluk birim testleri yazıldı ve doğrulandı. [x]
 
 ---
 

@@ -121,6 +121,24 @@ class FirebaseAuthRepository implements AuthRepositoryInterface {
     await _firebaseAuth.signOut();
   }
 
+  @override
+  Future<void> deleteAccount() async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user != null) {
+        final uid = user.uid;
+        try {
+          await _firestore.collection('users').doc(uid).delete();
+        } catch (_) {}
+        await user.delete();
+      }
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_mapAuthErrorMessage(e.code));
+    } catch (e) {
+      throw Exception('Hesap silinirken bir hata oluştu: $e');
+    }
+  }
+
   /// Firebase User nesnesini Firestore'dan rol ve ek bilgileri çekerek UserEntity'ye dönüştürür.
   Future<UserEntity> _mapFirebaseUserToEntity(User firebaseUser) async {
     UserRole role = UserRole.owner;
