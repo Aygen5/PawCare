@@ -7,7 +7,9 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/paw_header_actions.dart';
 import '../../../data/models/models.dart';
 import '../../../data/repositories/firebase_booking_repository.dart';
+import '../../../domain/entities/booking.dart' as entity;
 import '../../../domain/repositories/booking_repository_interface.dart';
+import '../../../domain/services/booking_conflict_service.dart';
 import '../../pets/cubit/pets_cubit.dart';
 import '../widgets/call_modal.dart';
 
@@ -38,6 +40,25 @@ class _SitterDetailScreenState extends State<SitterDetailScreen> {
     text: 'Barley tavuk alerjisine sahip, kendi maması çantada teslim edilecektir.',
   );
   int _activeGalleryIndex = 0;
+  List<entity.BookingRequest> _existingBookings = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingBookings();
+  }
+
+  Future<void> _loadExistingBookings() async {
+    final repo = widget.bookingRepository ?? FirebaseBookingRepository();
+    try {
+      final list = await repo.getAllBookings();
+      if (mounted) {
+        setState(() {
+          _existingBookings = list;
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -57,6 +78,64 @@ class _SitterDetailScreenState extends State<SitterDetailScreen> {
   double get _totalPrice => _subtotal + _serviceFee;
 
   Future<void> _sendBookingRequest() async {
+    final start = _rangeStart ?? DateTime.now();
+    final end = _rangeEnd ?? DateTime.now().add(const Duration(days: 1));
+
+    // Çakışma Kontrolü (Booking Conflict Check)
+    final conflict = BookingConflictService.hasConflict(
+      requestedStart: start,
+      requestedEnd: end,
+      existingBookings: _existingBookings,
+      sitterId: widget.sitter.id,
+    );
+
+    if (conflict) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: isDark
+              ? AppColors.darkSurface
+              : AppColors.surfaceContainerLowest,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.event_busy, color: AppColors.error),
+              const SizedBox(width: 8),
+              Text(
+                'Tarih Çakışması',
+                style: AppTypography.titleCard.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AppColors.darkOnSurface : AppColors.onSurface,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Seçtiğiniz tarihler arasında bakıcının onaylanmış başka bir rezervasyonu bulunmaktadır. Lütfen takvimde kırmızı ile işaretlenmemiş müsait günleri seçiniz.',
+            style: AppTypography.bodyMedium.copyWith(
+              color: isDark
+                  ? AppColors.darkOnSurfaceVariant
+                  : AppColors.onSurfaceVariant,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                'Tamam',
+                style: AppTypography.labelTag.copyWith(
+                  color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final petDog =
         context.read<PetsCubit?>()?.state.dog ?? PetsCubit.fallbackDog;
     final booking = BookingRequest(
@@ -68,8 +147,8 @@ class _SitterDetailScreenState extends State<SitterDetailScreen> {
       petBreed: petDog.breed,
       serviceTitle:
           '${widget.sitter.category} — $_selectedUnits ${widget.sitter.unitLabel} Rezervasyon',
-      startDate: _rangeStart ?? DateTime.now(),
-      endDate: _rangeEnd ?? DateTime.now().add(const Duration(days: 1)),
+      startDate: start,
+      endDate: end,
       totalPrice: _totalPrice,
       careNotes: _careNotesController.text,
       status: BookingStatus.pending,
@@ -563,7 +642,55 @@ class _SitterDetailScreenState extends State<SitterDetailScreen> {
                             _focusedDay = focusedDay;
                           });
                         },
+                        calendarBuilders: CalendarBuilders(
+                          markerBuilder: (context, day, events) {
+                            final isOccupied =
+                                BookingConflictService.isDayOccupied(
+                              day,
+                              _existingBookings,
+                              sitterId: widget.sitter.id,
+                            );
+                            if (isOccupied) {
+                              return Positioned(
+                                bottom: 2,
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.error,
+                                  ),
+                                ),
+                              );
+                            }
+                            return null;
+                          },
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Takvim Doluluk Bilgilendirme Çubuğu
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.error,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Kırmızı İşaret: Bakıcının Dolu / Onaylı Olduğu Günler',
+                          style: AppTypography.caption.copyWith(
+                            color: isDark
+                                ? AppColors.darkOnSurfaceVariant
+                                : AppColors.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 20),
 
