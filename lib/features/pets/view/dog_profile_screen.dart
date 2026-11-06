@@ -10,7 +10,7 @@ import '../../../core/utils/image_storage_service.dart';
 import '../../../core/widgets/paw_header_actions.dart';
 import '../../../domain/entities/dog.dart';
 import '../../../domain/entities/vaccination.dart';
-import '../../discovery/widgets/call_modal.dart';
+import '../../../core/widgets/modals/call_modal.dart';
 import '../cubit/pets_cubit.dart';
 import '../cubit/pets_state.dart';
 import '../widgets/health_card_modal.dart';

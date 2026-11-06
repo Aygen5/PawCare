@@ -87,13 +87,17 @@ void main() {
     status: BookingStatus.confirmed,
   );
 
-  Widget createTestWidget({required ProviderCubit cubit, AppState? appState}) {
+  Widget createTestWidget({
+    required ProviderCubit cubit,
+    RoleCubit? roleCubit,
+    AppState? appState,
+  }) {
     return AppStateScope(
       notifier: appState ?? AppState(),
       child: MultiBlocProvider(
         providers: [
           BlocProvider<ProviderCubit>.value(value: cubit),
-          BlocProvider<RoleCubit>(create: (_) => RoleCubit()),
+          BlocProvider<RoleCubit>.value(value: roleCubit ?? RoleCubit()),
         ],
         child: const MaterialApp(home: SitterDashboardScreen()),
       ),
@@ -113,11 +117,12 @@ void main() {
       manageBookingStatusUseCase = ManageBookingStatusUseCase(fakeRepo);
     });
 
-    test('Başlangıçta bekleyen ve onaylı rezervasyonları doğru ayırır', () {
+    test('Başlangıçta bekleyen ve onaylı rezervasyonları doğru ayırır', () async {
       final cubit = ProviderCubit(
         getBookingsUseCase: getBookingsUseCase,
         manageBookingStatusUseCase: manageBookingStatusUseCase,
       );
+      await cubit.loadDashboard();
 
       expect(cubit.state.status, ProviderStatus.loaded);
       expect(cubit.state.bookings.length, 2);
@@ -266,11 +271,11 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(450, 950));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      final appState = AppState();
-      appState.setRole(model.UserRole.sitter);
+      final roleCubit = RoleCubit()..switchToSitter();
+      expect(roleCubit.state, model.UserRole.sitter);
 
       await tester.pumpWidget(
-        createTestWidget(cubit: cubit, appState: appState),
+        createTestWidget(cubit: cubit, roleCubit: roleCubit),
       );
       await tester.pumpAndSettle();
 
@@ -280,7 +285,7 @@ void main() {
       await tester.tap(switchBtn);
       await tester.pumpAndSettle();
 
-      expect(appState.role, model.UserRole.owner);
+      expect(roleCubit.state, model.UserRole.owner);
     });
   });
 }

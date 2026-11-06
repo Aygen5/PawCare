@@ -12,8 +12,8 @@ import '../../pets/cubit/pets_cubit.dart';
 import '../../pets/widgets/health_card_modal.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
-import '../widgets/chat_modal.dart';
-import '../widgets/live_tracking_modal.dart';
+import '../../../core/widgets/modals/chat_modal.dart';
+import '../../../core/widgets/modals/live_tracking_modal.dart';
 
 /// Köpek Sahibi Ana Sayfası — Clean Architecture ve HomeCubit ile beslenir.
 class OwnerHomeScreen extends StatelessWidget {

@@ -175,7 +175,7 @@ class Dog extends HiveObject implements entity.Dog {
     String? behaviorNote,
     String? clinicName,
     String? clinicPhone,
-    covariant List<Vaccination>? vaccinations,
+    covariant List<entity.Vaccination>? vaccinations,
   }) {
     return Dog(
       id: id ?? this.id,
@@ -190,7 +190,11 @@ class Dog extends HiveObject implements entity.Dog {
       behaviorNote: behaviorNote ?? this.behaviorNote,
       clinicName: clinicName ?? this.clinicName,
       clinicPhone: clinicPhone ?? this.clinicPhone,
-      vaccinations: vaccinations ?? this.vaccinations,
+      vaccinations: vaccinations != null
+          ? vaccinations
+              .map((v) => v is Vaccination ? v : Vaccination.fromEntity(v))
+              .toList()
+          : this.vaccinations,
     );
   }
 

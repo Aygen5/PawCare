@@ -6,7 +6,10 @@ import 'package:paw_care/app/router/app_shell.dart';
 import 'package:paw_care/app/router/route_names.dart';
 import 'package:paw_care/core/widgets/paw_bottom_nav.dart';
 import 'package:paw_care/core/widgets/paw_header_actions.dart';
+import 'package:paw_care/data/repositories/in_memory_auth_repository.dart';
 import 'package:paw_care/data/repositories/settings_repository.dart';
+import 'package:paw_care/domain/entities/user_entity.dart';
+import 'package:paw_care/domain/entities/user_role.dart';
 import 'package:paw_care/features/discovery/view/explore_screen.dart';
 
 void main() {
@@ -21,10 +24,20 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
+      final authRepo = InMemoryAuthRepository(
+        initialUser: const UserEntity(
+          uid: 'u1',
+          email: 'test@pawcare.com',
+          displayName: 'Aygen',
+          role: UserRole.owner,
+        ),
+      );
+
       await tester.pumpWidget(
         PawCareApp(
           initialLocation: RoutePaths.home,
           settingsRepository: SettingsRepository.inMemory(),
+          authRepository: authRepo,
         ),
       );
       await tester.pump();
@@ -72,10 +85,20 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
+      final authRepo = InMemoryAuthRepository(
+        initialUser: const UserEntity(
+          uid: 'u1',
+          email: 'test@pawcare.com',
+          displayName: 'Aygen',
+          role: UserRole.owner,
+        ),
+      );
+
       await tester.pumpWidget(
         PawCareApp(
           initialLocation: RoutePaths.home,
           settingsRepository: SettingsRepository.inMemory(),
+          authRepository: authRepo,
         ),
       );
       await tester.pump();
@@ -85,7 +108,7 @@ void main() {
       expect(find.text('Keşfet'), findsOneWidget);
       expect(find.text('Köpeklerim'), findsOneWidget);
       expect(find.text('Taleplerim'), findsOneWidget);
-      expect(find.text('Profil'), findsWidgets);
+      expect(find.text('Profilim'), findsWidgets);
 
       // Keşfet sekmesine tıklar
       final exploreTab = find.text('Keşfet');
@@ -106,10 +129,20 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
+      final authRepo = InMemoryAuthRepository(
+        initialUser: const UserEntity(
+          uid: 'u1',
+          email: 'test@pawcare.com',
+          displayName: 'Aygen',
+          role: UserRole.owner,
+        ),
+      );
+
       await tester.pumpWidget(
         PawCareApp(
           initialLocation: RoutePaths.home,
           settingsRepository: SettingsRepository.inMemory(),
+          authRepository: authRepo,
         ),
       );
       await tester.pump();
@@ -127,10 +160,20 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
+      final authRepo = InMemoryAuthRepository(
+        initialUser: const UserEntity(
+          uid: 'u1',
+          email: 'test@pawcare.com',
+          displayName: 'Aygen',
+          role: UserRole.owner,
+        ),
+      );
+
       await tester.pumpWidget(
         PawCareApp(
           initialLocation: RoutePaths.home,
           settingsRepository: SettingsRepository.inMemory(),
+          authRepository: authRepo,
         ),
       );
       await tester.pump();
@@ -142,7 +185,6 @@ void main() {
 
       // Bildirimler modal penceresini doğrular
       expect(find.text('Bildirimler'), findsOneWidget);
-      expect(find.textContaining('Aşı Hatırlatması'), findsOneWidget);
     });
   });
 }

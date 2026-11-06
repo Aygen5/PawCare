@@ -11,18 +11,21 @@ import '../features/auth/cubit/auth_cubit.dart';
 import '../features/auth/cubit/role_cubit.dart';
 import '../features/chat/cubit/chat_cubit.dart';
 import '../features/pets/cubit/pets_cubit.dart';
+import '../domain/repositories/auth_repository_interface.dart';
 import 'router/app_router.dart';
 import 'router/route_names.dart';
 
 /// PawCare ana uygulama kurulumu, tema, rol, kimlik ve router bağlantısı.
 class PawCareApp extends StatefulWidget {
   final SettingsRepositoryInterface? settingsRepository;
+  final AuthRepositoryInterface? authRepository;
   final String initialLocation;
   final bool enableSplash;
 
   const PawCareApp({
     super.key,
     this.settingsRepository,
+    this.authRepository,
     this.initialLocation = RoutePaths.splash,
     this.enableSplash = true,
   });
@@ -47,7 +50,10 @@ class _PawCareAppState extends State<PawCareApp> {
         widget.settingsRepository ?? SettingsRepository.inMemory();
     _themeCubit = ThemeCubit(_settingsRepository);
     _roleCubit = RoleCubit(settingsRepository: _settingsRepository);
-    _authCubit = AuthCubit(settingsRepository: _settingsRepository);
+    _authCubit = AuthCubit(
+      authRepository: widget.authRepository,
+      settingsRepository: _settingsRepository,
+    );
     _petsCubit = PetsCubit()..loadPetProfile();
     _chatCubit = ChatCubit();
 

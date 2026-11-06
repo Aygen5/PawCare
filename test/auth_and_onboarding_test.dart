@@ -63,7 +63,7 @@ void main() {
       final success = await cubit.signUp(
         name: 'Yeni Kullanıcı',
         email: 'yeni@pawcare.com',
-        password: '123',
+        password: 'password123',
         role: UserRole.owner,
       );
 

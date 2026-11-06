@@ -4,7 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:paw_care/app/app.dart';
 import 'package:paw_care/app/router/app_router.dart';
 import 'package:paw_care/app/router/route_names.dart';
+import 'package:paw_care/data/repositories/in_memory_auth_repository.dart';
 import 'package:paw_care/data/repositories/settings_repository.dart';
+import 'package:paw_care/domain/entities/user_entity.dart';
+import 'package:paw_care/domain/entities/user_role.dart';
 import 'package:paw_care/features/discovery/view/explore_screen.dart';
 import 'package:paw_care/features/home/view/owner_home_screen.dart';
 import 'package:paw_care/features/onboarding/view/welcome_screen.dart';
@@ -58,10 +61,20 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
+      final authRepo = InMemoryAuthRepository(
+        initialUser: const UserEntity(
+          uid: 'u1',
+          email: 'test@pawcare.com',
+          displayName: 'Aygen',
+          role: UserRole.owner,
+        ),
+      );
+
       await tester.pumpWidget(
         PawCareApp(
           initialLocation: RoutePaths.home,
           settingsRepository: SettingsRepository.inMemory(),
+          authRepository: authRepo,
         ),
       );
       await tester.pump();
@@ -77,10 +90,20 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
+      final authRepo = InMemoryAuthRepository(
+        initialUser: const UserEntity(
+          uid: 'u1',
+          email: 'test@pawcare.com',
+          displayName: 'Aygen',
+          role: UserRole.owner,
+        ),
+      );
+
       await tester.pumpWidget(
         PawCareApp(
           initialLocation: RoutePaths.explore,
           settingsRepository: SettingsRepository.inMemory(),
+          authRepository: authRepo,
         ),
       );
       await tester.pump();
@@ -95,10 +118,20 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
+      final authRepo = InMemoryAuthRepository(
+        initialUser: const UserEntity(
+          uid: 'u1',
+          email: 'test@pawcare.com',
+          displayName: 'Aygen',
+          role: UserRole.owner,
+        ),
+      );
+
       await tester.pumpWidget(
         PawCareApp(
           initialLocation: RoutePaths.pets,
           settingsRepository: SettingsRepository.inMemory(),
+          authRepository: authRepo,
         ),
       );
       await tester.pump();
@@ -113,10 +146,20 @@ void main() {
         tester.view.devicePixelRatio = 1.0;
         addTearDown(() => tester.view.resetPhysicalSize());
 
+        final authRepo = InMemoryAuthRepository(
+          initialUser: const UserEntity(
+            uid: 's1',
+            email: 'sitter@pawcare.com',
+            displayName: 'Ayşe Yılmaz',
+            role: UserRole.sitter,
+          ),
+        );
+
         await tester.pumpWidget(
           PawCareApp(
             initialLocation: RoutePaths.sitterDashboard,
             settingsRepository: SettingsRepository.inMemory(),
+            authRepository: authRepo,
           ),
         );
         await tester.pump();

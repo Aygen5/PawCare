@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:paw_care/data/repositories/in_memory_auth_repository.dart';
 import 'package:paw_care/data/repositories/settings_repository.dart';
-import 'package:paw_care/main.dart';
 import 'package:paw_care/features/auth/widgets/login_modal.dart';
 import 'package:paw_care/features/auth/widgets/signup_modal.dart';
+import 'package:paw_care/features/onboarding/view/welcome_screen.dart';
+import 'package:paw_care/main.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -18,10 +20,13 @@ void main() {
         tester.view.devicePixelRatio = 1.0;
         addTearDown(() => tester.view.resetPhysicalSize());
 
+        final authRepo = InMemoryAuthRepository();
+
         await tester.pumpWidget(
           PawCareApp(
             enableSplash: false,
             settingsRepository: SettingsRepository.inMemory(),
+            authRepository: authRepo,
           ),
         );
         await tester.pump();
@@ -41,7 +46,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
 
-        expect(find.textContaining('Ayşe Yılmaz'), findsWidgets);
+        // Yetkilendirilmemiş kullanıcı GoRouter koruması gereği karşılamada kalır
+        expect(find.byType(WelcomeScreen), findsOneWidget);
       },
     );
 
@@ -52,10 +58,13 @@ void main() {
         tester.view.devicePixelRatio = 1.0;
         addTearDown(() => tester.view.resetPhysicalSize());
 
+        final authRepo = InMemoryAuthRepository();
+
         await tester.pumpWidget(
           PawCareApp(
             enableSplash: false,
             settingsRepository: SettingsRepository.inMemory(),
+            authRepository: authRepo,
           ),
         );
         await tester.pump();

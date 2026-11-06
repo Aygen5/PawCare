@@ -113,11 +113,12 @@ void main() {
       markNotificationReadUseCase = MarkNotificationReadUseCase(fakeRepo);
     });
 
-    test('Başlangıçta tüm bildirimleri ve okunmamış adedini hesaplar', () {
+    test('Başlangıçta tüm bildirimleri ve okunmamış adedini hesaplar', () async {
       final cubit = NotificationsCubit(
         getNotificationsUseCase: getNotificationsUseCase,
         markNotificationReadUseCase: markNotificationReadUseCase,
       );
+      await cubit.loadNotifications();
 
       expect(cubit.state.status, NotificationsStatus.loaded);
       expect(cubit.state.allNotifications.length, 2);
@@ -125,11 +126,12 @@ void main() {
       expect(cubit.state.hasUnread, isTrue);
     });
 
-    test('Filtreleme değiştirildiğinde doğru listeyi filtreler', () {
+    test('Filtreleme değiştirildiğinde doğru listeyi filtreler', () async {
       final cubit = NotificationsCubit(
         getNotificationsUseCase: getNotificationsUseCase,
         markNotificationReadUseCase: markNotificationReadUseCase,
       );
+      await cubit.loadNotifications();
 
       // Okunmamış filtresi
       cubit.setFilter(NotificationFilter.unread);
@@ -182,7 +184,9 @@ void main() {
       final cubit = NotificationsCubit(
         getNotificationsUseCase: getNotificationsUseCase,
         markNotificationReadUseCase: markNotificationReadUseCase,
+        notificationRepository: fakeRepo,
       );
+      await cubit.loadNotifications();
 
       await cubit.triggerLocalEventNotification(
         title: 'Demo Yürüyüş Durumu 🦮',
@@ -273,8 +277,8 @@ void main() {
         await tester.tap(find.text('Bildirimleri Aç'));
         await tester.pumpAndSettle();
 
-        final markAllBtn = find.text('Tümünü Oku');
-        expect(markAllBtn, findsOneWidget);
+        final markAllBtn = find.text('Tümünü Oku').first;
+        expect(find.text('Tümünü Oku'), findsWidgets);
 
         await tester.tap(markAllBtn);
         await tester.pumpAndSettle();

@@ -11,7 +11,7 @@ import '../../../domain/entities/booking.dart' as entity;
 import '../../../domain/repositories/booking_repository_interface.dart';
 import '../../../domain/services/booking_conflict_service.dart';
 import '../../pets/cubit/pets_cubit.dart';
-import '../widgets/call_modal.dart';
+import '../../../core/widgets/modals/call_modal.dart';
 
 /// Bakıcı ve Hizmet Detay Ekranı — Tarih seçimi, fiyatlama ve Clean Architecture rezervasyon akışı.
 class SitterDetailScreen extends StatefulWidget {
