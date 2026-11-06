@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'app/app.dart';
+import 'core/services/crash_reporting_service.dart';
 import 'core/services/notification_service.dart';
 import 'data/local/hive_boxes.dart';
 import 'data/repositories/settings_repository.dart';
@@ -14,6 +15,8 @@ export 'app/app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await CrashReportingService.init();
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -22,7 +25,8 @@ Future<void> main() async {
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     }
     await NotificationService().initialize();
-  } catch (e) {
+  } catch (e, stack) {
+    CrashReportingService.recordError(e, stack, reason: 'Firebase initialization failed');
     debugPrint('Firebase / Messaging initialization failed: $e');
   }
   await HiveBoxes.init();
