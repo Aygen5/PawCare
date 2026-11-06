@@ -593,23 +593,52 @@ class BookingRequest extends HiveObject implements entity.BookingRequest {
 
 @HiveType(typeId: 7)
 class ChatMessage extends HiveObject implements entity.ChatMessage {
+  @override
   @HiveField(0)
   final String id;
 
+  @override
   @HiveField(1)
   final String senderName;
 
+  @override
   @HiveField(2)
   final String text;
 
+  @override
   @HiveField(3)
   final String time;
 
+  @override
   @HiveField(4)
   final bool isMe;
 
   @override
   final UserRole? senderRole;
+
+  @override
+  @HiveField(5)
+  final String? chatId;
+
+  @override
+  @HiveField(6)
+  final String? senderId;
+
+  @override
+  @HiveField(7)
+  final String? receiverId;
+
+  @override
+  @HiveField(8)
+  final DateTime timestamp;
+
+  @override
+  @HiveField(9)
+  final bool isRead;
+
+  @override
+  @HiveField(10)
+  final String? mediaUrl;
 
   ChatMessage({
     required this.id,
@@ -618,43 +647,80 @@ class ChatMessage extends HiveObject implements entity.ChatMessage {
     required this.time,
     required this.isMe,
     this.senderRole,
-  });
+    this.chatId,
+    this.senderId,
+    this.receiverId,
+    DateTime? timestamp,
+    this.isRead = false,
+    this.mediaUrl,
+  }) : timestamp = timestamp ?? DateTime.now();
 
+  @override
   ChatMessage copyWith({
     String? id,
+    String? chatId,
+    String? senderId,
+    String? receiverId,
     String? senderName,
     String? text,
     String? time,
+    DateTime? timestamp,
     bool? isMe,
+    bool? isRead,
+    String? mediaUrl,
     UserRole? senderRole,
   }) {
     return ChatMessage(
       id: id ?? this.id,
+      chatId: chatId ?? this.chatId,
+      senderId: senderId ?? this.senderId,
+      receiverId: receiverId ?? this.receiverId,
       senderName: senderName ?? this.senderName,
       text: text ?? this.text,
       time: time ?? this.time,
+      timestamp: timestamp ?? this.timestamp,
       isMe: isMe ?? this.isMe,
+      isRead: isRead ?? this.isRead,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
       senderRole: senderRole ?? this.senderRole,
     );
   }
 
+  @override
+  Map<String, dynamic> toMap() => toJson();
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'chatId': chatId,
+      'senderId': senderId,
+      'receiverId': receiverId,
       'senderName': senderName,
       'text': text,
       'time': time,
+      'timestamp': timestamp.millisecondsSinceEpoch,
       'isMe': isMe,
+      'isRead': isRead,
+      'mediaUrl': mediaUrl,
+      if (senderRole != null) 'senderRole': senderRole!.name,
     };
   }
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
-      id: json['id'] as String,
-      senderName: json['senderName'] as String,
-      text: json['text'] as String,
-      time: json['time'] as String,
-      isMe: json['isMe'] as bool,
+      id: json['id'] as String? ?? '',
+      chatId: json['chatId'] as String?,
+      senderId: json['senderId'] as String?,
+      receiverId: json['receiverId'] as String?,
+      senderName: json['senderName'] as String? ?? '',
+      text: json['text'] as String? ?? '',
+      time: json['time'] as String? ?? '',
+      timestamp: json['timestamp'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int)
+          : DateTime.now(),
+      isMe: json['isMe'] as bool? ?? false,
+      isRead: json['isRead'] as bool? ?? false,
+      mediaUrl: json['mediaUrl'] as String?,
     );
   }
 }
@@ -705,6 +771,9 @@ class NotificationItem extends HiveObject implements entity.NotificationItem {
       type: type ?? this.type,
     );
   }
+
+  @override
+  Map<String, dynamic> toMap() => toJson();
 
   Map<String, dynamic> toJson() {
     return {

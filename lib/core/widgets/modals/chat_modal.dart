@@ -53,6 +53,23 @@ class _ChatModalState extends State<ChatModal> {
   final _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final role = context.read<RoleCubit?>()?.state ?? UserRole.owner;
+        final chatId =
+            'chat_${widget.sitterName.replaceAll(' ', '_').toLowerCase()}';
+        context.read<ChatCubit>().initChatStream(
+              chatId: chatId,
+              participantName: widget.sitterName,
+              currentRole: role,
+            );
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _textController.dispose();
     _scrollController.dispose();
@@ -64,11 +81,15 @@ class _ChatModalState extends State<ChatModal> {
     if (text.isEmpty) return;
 
     final role = context.read<RoleCubit?>()?.state ?? UserRole.owner;
+    final chatId =
+        'chat_${widget.sitterName.replaceAll(' ', '_').toLowerCase()}';
+
     context.read<ChatCubit>().sendMessage(
-      text,
-      participantName: widget.sitterName,
-      currentRole: role,
-    );
+          text,
+          chatId: chatId,
+          participantName: widget.sitterName,
+          currentRole: role,
+        );
     _textController.clear();
 
     Future.delayed(const Duration(milliseconds: 100), () {

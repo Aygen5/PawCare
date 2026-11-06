@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../services/phone_call_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 
@@ -170,23 +171,23 @@ class CallModal extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '$contactName ($phoneNumber) aranıyor...',
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: isDark
-                                    ? AppColors.darkOnPrimary
-                                    : Colors.white,
+                        final launched =
+                            await PhoneCallService.makeCall(phoneNumber);
+                        if (!launched && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Arama başlatılamadı. Cihazınızda telefon uygulaması bulunamadı ($phoneNumber).',
+                                style: AppTypography.bodyMedium.copyWith(
+                                  color: Colors.white,
+                                ),
                               ),
+                              backgroundColor: AppColors.error,
                             ),
-                            backgroundColor: isDark
-                                ? AppColors.darkPrimary
-                                : AppColors.primary,
-                          ),
-                        );
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
