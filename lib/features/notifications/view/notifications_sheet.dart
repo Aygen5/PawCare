@@ -269,11 +269,11 @@ class NotificationsSheet extends StatelessWidget {
                 ),
               const SizedBox(height: 14),
 
-              // Demo Olaylarını Test Etme Çubuğu
+              // Canlı Bildirim Senkronizasyon ve Hızlı İşlem Çubuğu
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+                  horizontal: 14,
+                  vertical: 10,
                 ),
                 decoration: BoxDecoration(
                   color: isDark
@@ -289,14 +289,14 @@ class NotificationsSheet extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.play_circle_outline,
+                      Icons.notifications_active_outlined,
                       size: 18,
                       color: isDark ? AppColors.darkPrimary : AppColors.primary,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Demo Olayı Simüle Et:',
+                        'Canlı FCM Bildirimleri Aktif',
                         style: AppTypography.caption.copyWith(
                           fontWeight: FontWeight.w600,
                           color: isDark
@@ -305,35 +305,25 @@ class NotificationsSheet extends StatelessWidget {
                         ),
                       ),
                     ),
-                    PopupMenuButton<int>(
-                      tooltip: 'Demo Olayı Seç',
-                      icon: Icon(
-                        Icons.add_alert,
-                        size: 18,
-                        color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                    if (notifications.any((n) => !n.isRead))
+                      TextButton.icon(
+                        onPressed: () => cubit.markAllAsRead(),
+                        icon: const Icon(Icons.done_all, size: 16),
+                        label: Text(
+                          'Tümünü Oku',
+                          style: AppTypography.labelTag.copyWith(
+                            color: isDark
+                                ? AppColors.darkPrimary
+                                : AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
-                      onSelected: (val) {
-                        _triggerDemoEvent(val, cubit, role);
-                      },
-                      itemBuilder: (ctx) => [
-                        const PopupMenuItem(
-                          value: 1,
-                          child: Text('1. Rezervasyon Talebi İletildi'),
-                        ),
-                        const PopupMenuItem(
-                          value: 2,
-                          child: Text('2. Rezervasyon Durumu Değişti'),
-                        ),
-                        const PopupMenuItem(
-                          value: 3,
-                          child: Text('3. Aşı Hatırlatıcısı'),
-                        ),
-                        const PopupMenuItem(
-                          value: 4,
-                          child: Text('4. Demo Yürüyüş Durumu'),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -342,68 +332,6 @@ class NotificationsSheet extends StatelessWidget {
         },
       ),
     );
-  }
-
-  void _triggerDemoEvent(
-    int typeIndex,
-    NotificationsCubit cubit,
-    UserRole role,
-  ) {
-    String title;
-    String body;
-    String type;
-
-    if (role == UserRole.sitter) {
-      switch (typeIndex) {
-        case 1:
-          title = 'Yeni Rezervasyon Talebi Alındı 📋';
-          body = 'Aygen Yıldırım, Barley (Golden Retriever) için 2 gecelik otel talebi gönderdi.';
-          type = 'booking';
-          break;
-        case 2:
-          title = 'Misafir Pati Girişi Yapıldı 🐶';
-          body = 'Misafir pati "Luna" başarıyla otele giriş yaptı.';
-          type = 'system';
-          break;
-        case 3:
-          title = 'Ödeme Cüzdana Aktarıldı 💳';
-          body = 'Barley konaklaması için ₺900 ön ödeme cüzdan bakiyenize eklendi.';
-          type = 'booking';
-          break;
-        case 4:
-        default:
-          title = 'Müşteri Mesajı 💬';
-          body = 'Aygen Yıldırım: "Barley mamasını severek yedi mi acaba?"';
-          type = 'system';
-          break;
-      }
-    } else {
-      switch (typeIndex) {
-        case 1:
-          title = 'Rezervasyon Oluşturuldu 📋';
-          body = 'Rezervasyon talebiniz iletildi: Köpek Oteli — 2 Gece Konaklama - Beklemede';
-          type = 'booking';
-          break;
-        case 2:
-          title = 'Rezervasyon Onaylandı! 🐾';
-          body = 'Mert Demir ile yürüyüş seansı talebiniz onaylandı.';
-          type = 'booking';
-          break;
-        case 3:
-          title = 'Aşı Hatırlatıcısı 💉';
-          body = 'Barley için Karma Aşı zamanı yaklaşıyor (26 Ekim 2026).';
-          type = 'vaccine';
-          break;
-        case 4:
-        default:
-          title = 'Demo Yürüyüş Durumu 🦮';
-          body = 'Mert Demir yürüyüş seansını başlattı.';
-          type = 'walk';
-          break;
-      }
-    }
-
-    cubit.triggerLocalEventNotification(title: title, body: body, type: type);
   }
 
   Widget _buildFilterChip({

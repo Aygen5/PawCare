@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../data/repositories/notification_repository.dart';
+import '../../../data/repositories/firebase_notification_repository.dart';
 import '../../../domain/entities/notification.dart';
 import '../../../domain/repositories/notification_repository_interface.dart';
 import '../../../domain/usecases/notification/get_notifications_use_case.dart';
@@ -12,6 +13,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   final GetNotificationsUseCase _getNotificationsUseCase;
   final MarkNotificationReadUseCase _markNotificationReadUseCase;
   final NotificationRepositoryInterface _notificationRepository;
+  StreamSubscription<List<NotificationItem>>? _notificationSubscription;
 
   NotificationsCubit({
     GetNotificationsUseCase? getNotificationsUseCase,
@@ -19,23 +21,34 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     NotificationRepositoryInterface? notificationRepository,
     List<NotificationItem>? initialNotifications,
   }) : _notificationRepository =
-           notificationRepository ?? NotificationRepository(),
-       _getNotificationsUseCase =
-           getNotificationsUseCase ??
-           GetNotificationsUseCase(
-             notificationRepository ?? NotificationRepository(),
-           ),
-       _markNotificationReadUseCase =
-           markNotificationReadUseCase ??
-           MarkNotificationReadUseCase(
-             notificationRepository ?? NotificationRepository(),
-           ),
-       super(const NotificationsState()) {
+            notificationRepository ?? FirebaseNotificationRepository(),
+        _getNotificationsUseCase =
+            getNotificationsUseCase ??
+            GetNotificationsUseCase(
+              notificationRepository ?? FirebaseNotificationRepository(),
+            ),
+        _markNotificationReadUseCase =
+            markNotificationReadUseCase ??
+            MarkNotificationReadUseCase(
+              notificationRepository ?? FirebaseNotificationRepository(),
+            ),
+        super(const NotificationsState()) {
     if (initialNotifications != null && initialNotifications.isNotEmpty) {
       _applyNotifications(initialNotifications, state.activeFilter);
     } else {
       loadNotifications();
     }
+    _startWatching();
+  }
+
+  void _startWatching() {
+    _notificationSubscription?.cancel();
+    _notificationSubscription =
+        _notificationRepository.watchNotifications().listen((list) {
+      if (list.isNotEmpty) {
+        _applyNotifications(list, state.activeFilter);
+      }
+    });
   }
 
   /// Veritabanındaki tüm bildirimleri asenkron getirir ve filtre durumuna göre listeyi yayar.
@@ -164,5 +177,11 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     } catch (_) {
       _applyNotifications([], state.activeFilter);
     }
+  }
+
+  @override
+  Future<void> close() {
+    _notificationSubscription?.cancel();
+    return super.close();
   }
 }

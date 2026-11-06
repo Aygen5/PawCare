@@ -317,15 +317,16 @@ sequenceDiagram
 
 ---
 
-## FAZ 5: Gerçek Zamanlı İletişim, Sesli Arama & Push Bildirimler
+## FAZ 5: Gerçek Zamanlı İletişim, Sesli Arama & Push Bildirimler [x]
 
 > **Öncelik:** Yüksek (P1)  
 > **Süre:** 5. Sprint  
-> **Amaç:** İki yönlü canlı sohbeti Firestore'a bağlamak, `call_modal`'ı gerçek telefon aramasına dönüştürmek ve FCM bildirimlerini devreye almak.
+> **Amaç:** İki yönlü canlı sohbeti Firestore'a bağlamak, `call_modal`'ı gerçek telefon aramasına dönüştürmek ve FCM bildirimlerini devreye almak.  
+> **Durum:** TAMAMLANDI [x]
 
-### 5.1. Birebir Canlı Sohbet (Real-Time Chat)
-- [chat_modal.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/core/widgets/modals/chat_modal.dart) içindeki `AppState` bağımlılığı temizlenecek.
-- `ChatRepositoryInterface` ve `FirestoreChatRepository` oluşturulacak:
+### 5.1. Birebir Canlı Sohbet (Real-Time Chat) [x]
+- [chat_modal.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/core/widgets/modals/chat_modal.dart) içindeki `AppState` bağımlılığı tamamen kaldırıldı ve `ChatCubit` Firestore stream'ine bağlandı. [x]
+- [chat_repository_interface.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/domain/repositories/chat_repository_interface.dart) ve [firebase_chat_repository.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/data/repositories/firebase_chat_repository.dart) oluşturuldu: [x]
   ```text
   chats/{chatId}/messages/{messageId}
     ├── senderId: string
@@ -335,26 +336,20 @@ sequenceDiagram
     ├── timestamp: timestamp
     └── isRead: boolean
   ```
-- Mesajlar Firestore `snapshots()` ile asenkron dinlenecek.
-- Yeni mesaj geldiğinde sayfa otomatik olarak en alta kayacak.
+- Mesajlar Firestore `snapshots()` ile asenkron dinleniyor, çevrimdışı ve test senaryolarında in-memory fallback ile çalışıyor. [x]
+- Yeni mesaj geldiğinde sayfa otomatik olarak en alta kayıyor. [x]
 
-### 5.2. Gerçek Telefon Araması (`url_launcher`)
-- [call_modal.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/core/widgets/modals/call_modal.dart) içindeki sahte `SnackBar` silinecek.
-- `url_launcher` paketiyle gerçek arama tetiklenecek:
-  ```dart
-  final Uri launchUri = Uri(scheme: 'tel', path: cleanPhoneNumber);
-  if (await canLaunchUrl(launchUri)) {
-    await launchUrl(launchUri);
-  }
-  ```
+### 5.2. Gerçek Telefon Araması (`url_launcher`) [x]
+- `url_launcher: ^6.3.3` paketi ve Android `tel:` intent sorguları eklendi. [x]
+- [call_modal.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/core/widgets/modals/call_modal.dart) içindeki sahte `SnackBar` kaldırıldı. [x]
+- [phone_call_service.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/core/services/phone_call_service.dart) servisi ile numaralar temizlenerek (`cleanPhoneNumber`) gerçek sistem araması tetikleniyor (`canLaunchUrl` / `launchUrl(mode: LaunchMode.externalApplication)`). [x]
 
-### 5.3. Push Bildirimleri (Firebase Cloud Messaging - FCM)
-- `notifications_sheet.dart` içindeki demo butonları silinecek.
-- Kullanıcı giriş yaptığında cihazın FCM Token'ı alınıp Firestore `users/{uid}/fcmToken` alanına kaydedilecek.
-- Cloud Functions veya sunucu tetikleyicisi ile:
-  - Bakıcı rezervasyonu onayladığında -> Sahibin telefonuna sistem bildirimi gidecek.
-  - Yeni sohbet mesajı geldiğinde -> Karşı tarafa anında "💬 Yeni mesajınız var" bildirimi düşecek.
-  - Yürüyüş başladığında -> "🐾 Köpeğiniz Mert ile yürüyüşe çıktı!" bildirimi gidecek.
+### 5.3. Push Bildirimleri (Firebase Cloud Messaging - FCM) [x]
+- `firebase_messaging: ^17.0.1` eklendi. [x]
+- [notifications_sheet.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/features/notifications/view/notifications_sheet.dart) içindeki demo simülasyon butonu temizlenerek canlı bildirim durumu ve "Tümünü Oku" eylemine dönüştürüldü. [x]
+- [notification_service.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/core/services/notification_service.dart): Cihazın FCM Token kaydı (`users/{uid}/fcmToken`), ön plan bildirim dinleyicisi (`onMessage`), arka plan işleyicisi (`firebaseMessagingBackgroundHandler`) ve izin yönetimi yapılandırıldı. [x]
+- [firebase_notification_repository.dart](file:///c:/Users/aygen/OneDrive/Masaüstü/PawCare-main/lib/data/repositories/firebase_notification_repository.dart): Firestore `users/{uid}/notifications` koleksiyonu ile canlı bildirim senkronizasyonu kuruldu. [x]
+- Tetikleyiciler: Rezervasyon onayı (`notifyBookingConfirmed`), yeni sohbet mesajı (`notifyNewChatMessage`) ve canlı yürüyüş başlangıcı (`notifyWalkStarted`) domain olayları bildirime bağlandı. [x]
 
 > **Faz 5 Başarı Kriteri:**  
 > - Uygulama kapalıyken bile diğer kullanıcıdan gelen mesaj veya rezervasyon onayının telefon bildirim çubuğuna düşmesi.  
